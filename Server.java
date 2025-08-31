@@ -318,12 +318,10 @@ public class Server extends JFrame {
 
                     if (message.startsWith("PONG")) {
                         lastPongTime = System.currentTimeMillis();
-                        continue;
                     } else if (message.startsWith("TYPING|")) {
                         // Relay typing state to others: expected format TYPING|username|true/false
                         String typingPayload = message.substring(7); // username|true
                         broadcastMessage(typingPayload, clientId, "TYPING");
-                        continue;
                     } else if (message.startsWith("/w ") || message.startsWith("/pm ")) {
                         // Private message: /w username message
                         String[] parts = message.split(" ", 3);
@@ -335,11 +333,9 @@ public class Server extends JFrame {
                             sendMessage("SYSTEM|" + LocalDateTime.now().format(timeFormatter)
                                     + "|Usage: /w <username> <message>");
                         }
-                        continue;
                     } else if (message.equalsIgnoreCase("/help")) {
                         sendMessage("SYSTEM|" + LocalDateTime.now().format(timeFormatter)
                                 + "|Available commands: /help, /list, /quit, /w <user> <msg>, /broadcast <msg>, /file <name>");
-                        continue;
                     } else if (message.startsWith("/broadcast ")) {
                         String broadcastMsg = message.substring(11);
                         broadcastMessage(broadcastMsg, clientId, "CHAT");
