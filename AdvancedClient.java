@@ -6,6 +6,378 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.text.*;
 
+// Custom Modern Components
+class ModernButton extends JButton {
+    private Color bgColor;
+    private Color hoverColor;
+    private Timer animationTimer;
+    private float animationProgress = 0.0f;
+    private boolean isHovering = false;
+
+    public ModernButton(String text, Color bgColor) {
+        super(text);
+        this.bgColor = bgColor;
+        this.hoverColor = bgColor.brighter();
+
+        setContentAreaFilled(false);
+        setBorderPainted(false);
+        setFocusPainted(false);
+        setFont(new Font("Segoe UI", Font.BOLD, 12));
+        setForeground(Color.WHITE);
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
+        setBorder(new EmptyBorder(12, 24, 12, 24));
+
+        animationTimer = new Timer(16, e -> {
+            if (isHovering && animationProgress < 1.0f) {
+                animationProgress = Math.min(1.0f, animationProgress + 0.1f);
+                repaint();
+            } else if (!isHovering && animationProgress > 0.0f) {
+                animationProgress = Math.max(0.0f, animationProgress - 0.1f);
+                repaint();
+            }
+        });
+
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                isHovering = true;
+                animationTimer.start();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                isHovering = false;
+                animationTimer.start();
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                animationProgress = 1.0f;
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                animationProgress = isHovering ? 0.8f : 0.0f;
+                repaint();
+            }
+        });
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Interpolate colors
+        Color currentColor = interpolateColor(bgColor, hoverColor, animationProgress);
+        g2d.setColor(currentColor);
+
+        // Draw rounded rectangle with shadow
+        g2d.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 8, 8);
+
+        // Add subtle glow effect when hovering
+        if (animationProgress > 0) {
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, animationProgress * 0.3f));
+            g2d.setColor(Color.WHITE);
+            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+        }
+
+        g2d.dispose();
+        super.paintComponent(g);
+    }
+
+    private Color interpolateColor(Color start, Color end, float factor) {
+        int r = (int) (start.getRed() + factor * (end.getRed() - start.getRed()));
+        int g = (int) (start.getGreen() + factor * (end.getGreen() - start.getGreen()));
+        int b = (int) (start.getBlue() + factor * (end.getBlue() - start.getBlue()));
+        return new Color(Math.max(0, Math.min(255, r)),
+                Math.max(0, Math.min(255, g)),
+                Math.max(0, Math.min(255, b)));
+    }
+}
+
+class ModernTextField extends JTextField {
+    private Color focusColor;
+    private Color borderColor;
+    private boolean isFocused = false;
+    private Timer animationTimer;
+    private float animationProgress = 0.0f;
+
+    public ModernTextField(String text, int columns, Color focusColor, Color borderColor) {
+        super(text, columns);
+        this.focusColor = focusColor;
+        this.borderColor = borderColor;
+
+        setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        setBackground(new Color(48, 48, 48));
+        setForeground(new Color(240, 240, 240));
+        setCaretColor(focusColor);
+        setBorder(new EmptyBorder(8, 12, 8, 12));
+
+        animationTimer = new Timer(16, e -> {
+            if (isFocused && animationProgress < 1.0f) {
+                animationProgress = Math.min(1.0f, animationProgress + 0.1f);
+                repaint();
+            } else if (!isFocused && animationProgress > 0.0f) {
+                animationProgress = Math.max(0.0f, animationProgress - 0.1f);
+                repaint();
+            }
+        });
+
+        addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                isFocused = true;
+                animationTimer.start();
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                isFocused = false;
+                animationTimer.start();
+            }
+        });
+    }
+
+    @Override
+    protected void paintBorder(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        Color currentColor = interpolateColor(borderColor, focusColor, animationProgress);
+        g2d.setColor(currentColor);
+        g2d.setStroke(new BasicStroke(1 + animationProgress * 2));
+        g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 6, 6);
+
+        g2d.dispose();
+    }
+
+    private Color interpolateColor(Color start, Color end, float factor) {
+        int r = (int) (start.getRed() + factor * (end.getRed() - start.getRed()));
+        int g = (int) (start.getGreen() + factor * (end.getGreen() - start.getGreen()));
+        int b = (int) (start.getBlue() + factor * (end.getBlue() - start.getBlue()));
+        return new Color(Math.max(0, Math.min(255, r)),
+                Math.max(0, Math.min(255, g)),
+                Math.max(0, Math.min(255, b)));
+    }
+}
+
+class ModernPanel extends JPanel {
+    private Color backgroundColor;
+    private int cornerRadius;
+    private boolean hasShadow;
+
+    public ModernPanel(LayoutManager layout, Color backgroundColor, int cornerRadius, boolean hasShadow) {
+        super(layout);
+        this.backgroundColor = backgroundColor;
+        this.cornerRadius = cornerRadius;
+        this.hasShadow = hasShadow;
+        setOpaque(false);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        if (hasShadow) {
+            // Draw shadow
+            g2d.setColor(new Color(0, 0, 0, 30));
+            g2d.fillRoundRect(4, 4, getWidth() - 4, getHeight() - 4, cornerRadius, cornerRadius);
+        }
+
+        // Draw main background
+        g2d.setColor(backgroundColor);
+        g2d.fillRoundRect(0, 0, getWidth() - (hasShadow ? 4 : 0),
+                getHeight() - (hasShadow ? 4 : 0), cornerRadius, cornerRadius);
+
+        g2d.dispose();
+        super.paintComponent(g);
+    }
+}
+
+// Modern UI Components - Continued
+class AnimatedLabel extends JLabel {
+    private Timer pulseTimer;
+    private float pulseOpacity = 1.0f;
+    private boolean isPulsing = false;
+
+    public AnimatedLabel(String text) {
+        super(text);
+        pulseTimer = new Timer(50, e -> {
+            if (isPulsing) {
+                pulseOpacity += 0.1f;
+                if (pulseOpacity >= 1.0f) {
+                    pulseOpacity = 0.7f;
+                }
+                repaint();
+            }
+        });
+    }
+
+    public void startPulse() {
+        isPulsing = true;
+        pulseTimer.start();
+    }
+
+    public void stopPulse() {
+        isPulsing = false;
+        pulseTimer.stop();
+        pulseOpacity = 1.0f;
+        repaint();
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        if (isPulsing) {
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulseOpacity));
+        }
+        super.paintComponent(g2d);
+        g2d.dispose();
+    }
+}
+
+class ModernTitledBorder extends AbstractBorder {
+    private String title;
+    private Color color;
+    private Font font;
+
+    public ModernTitledBorder(String title, Color color) {
+        this.title = title;
+        this.color = color;
+        this.font = new Font("Segoe UI", Font.BOLD, 12);
+    }
+
+    @Override
+    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Draw border
+        g2d.setColor(color);
+        g2d.setStroke(new BasicStroke(2.0f));
+        g2d.drawRoundRect(x + 1, y + 10, width - 2, height - 12, 8, 8);
+
+        // Draw title background
+        FontMetrics fm = g2d.getFontMetrics(font);
+        int titleWidth = fm.stringWidth(title) + 16;
+        g2d.setColor(new Color(28, 28, 28));
+        g2d.fillRoundRect(x + 15, y, titleWidth, 20, 10, 10);
+
+        // Draw title
+        g2d.setColor(color);
+        g2d.setFont(font);
+        g2d.drawString(title, x + 23, y + 14);
+
+        g2d.dispose();
+    }
+
+    @Override
+    public Insets getBorderInsets(Component c) {
+        return new Insets(20, 10, 10, 10);
+    }
+}
+
+class ModernRoundedBorder extends AbstractBorder {
+    private Color color;
+    private int radius;
+
+    public ModernRoundedBorder(Color color, int radius) {
+        this.color = color;
+        this.radius = radius;
+    }
+
+    @Override
+    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(color);
+        g2d.fillRoundRect(x, y, width, height, radius, radius);
+        g2d.dispose();
+    }
+
+    @Override
+    public Insets getBorderInsets(Component c) {
+        return new Insets(2, 2, 2, 2);
+    }
+}
+
+class ModernListCellRenderer extends DefaultListCellRenderer {
+    @Override
+    public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+            boolean isSelected, boolean cellHasFocus) {
+        super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+
+        setBorder(new EmptyBorder(8, 12, 8, 12));
+        setFont(new Font("Segoe UI", Font.PLAIN, 12));
+
+        if (isSelected) {
+            setBackground(new Color(88, 86, 214, 150));
+            setForeground(Color.WHITE);
+        } else {
+            setBackground(new Color(38, 38, 38));
+            setForeground(new Color(240, 240, 240));
+        }
+
+        // Add online indicator
+        setText("🟢 " + value.toString());
+
+        return this;
+    }
+}
+
+class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+    @Override
+    protected void configureScrollBarColors() {
+        thumbColor = new Color(88, 86, 214, 100);
+        thumbDarkShadowColor = new Color(88, 86, 214, 150);
+        thumbHighlightColor = new Color(88, 86, 214, 200);
+        thumbLightShadowColor = new Color(88, 86, 214, 50);
+        trackColor = new Color(28, 28, 28);
+        trackHighlightColor = new Color(38, 38, 38);
+    }
+
+    @Override
+    protected JButton createDecreaseButton(int orientation) {
+        return createZeroButton();
+    }
+
+    @Override
+    protected JButton createIncreaseButton(int orientation) {
+        return createZeroButton();
+    }
+
+    private JButton createZeroButton() {
+        JButton button = new JButton();
+        button.setPreferredSize(new Dimension(0, 0));
+        button.setMinimumSize(new Dimension(0, 0));
+        button.setMaximumSize(new Dimension(0, 0));
+        return button;
+    }
+
+    @Override
+    protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setColor(thumbColor);
+        g2d.fillRoundRect(thumbBounds.x + 2, thumbBounds.y + 2,
+                thumbBounds.width - 4, thumbBounds.height - 4, 6, 6);
+        g2d.dispose();
+    }
+
+    @Override
+    protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setColor(trackColor);
+        g2d.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+        g2d.dispose();
+    }
+}
+
+// Modern UI Components - Continued
+
 public class AdvancedClient extends JFrame {
     private Socket socket;
     private BufferedReader input;
@@ -14,104 +386,130 @@ public class AdvancedClient extends JFrame {
 
     // Modern UI Components
     private JTextPane chatArea;
-    private JTextField messageField;
-    private JButton connectButton, sendButton;
+    private ModernTextField messageField;
+    private ModernButton connectButton, sendButton, emojiButton;
     private JList<String> userList;
     private DefaultListModel<String> userListModel;
-    private JPanel connectionPanel, chatPanel, inputPanel;
-    private JLabel statusLabel, userCountLabel;
+    private ModernPanel connectionPanel, chatPanel, inputPanel;
+    private AnimatedLabel statusLabel, userCountLabel;
     private JLabel typingLabel;
-    private JTextField serverField, portField, usernameField;
+    private ModernTextField serverField, portField, usernameField;
 
     private String serverAddress = "localhost";
     private int serverPort = 12345;
     private String username = "Anonymous";
 
-    // Modern color scheme
-    private final Color PRIMARY_COLOR = new Color(63, 81, 181);
-    private final Color ACCENT_COLOR = new Color(255, 87, 34);
-    private final Color SUCCESS_COLOR = new Color(76, 175, 80);
-    private final Color BACKGROUND_COLOR = new Color(250, 250, 250);
-    private final Color CHAT_BACKGROUND = new Color(255, 255, 255);
+    // Modern Dark Theme Color Scheme
+    private final Color PRIMARY_COLOR = new Color(88, 86, 214);
+    private final Color ACCENT_COLOR = new Color(255, 92, 88);
+    private final Color SUCCESS_COLOR = new Color(72, 187, 120);
+    private final Color BACKGROUND_COLOR = new Color(18, 18, 18);
+    private final Color SURFACE_COLOR = new Color(28, 28, 28);
+    private final Color CARD_COLOR = new Color(38, 38, 38);
+    private final Color TEXT_COLOR = new Color(240, 240, 240);
+    private final Color TEXT_SECONDARY = new Color(160, 160, 160);
+    private final Color BORDER_COLOR = new Color(58, 58, 58);
 
     public AdvancedClient() {
         initializeModernGUI();
         setupNetworking();
-        // Ensure window is visible and not minimized
-        setVisible(true);
-        setExtendedState(JFrame.NORMAL);
-        toFront();
+        // Add window transition effect
+        SwingUtilities.invokeLater(() -> {
+            setVisible(true);
+            setExtendedState(JFrame.NORMAL);
+            toFront();
+            // Fade in effect
+            fadeIn();
+        });
+    }
+
+    private void fadeIn() {
+        // Simple fade-in using a timer for component visibility
+        Timer fadeTimer = new Timer(30, null);
+        final float[] opacity = { 0.0f };
+
+        fadeTimer.addActionListener(e -> {
+            opacity[0] += 0.05f;
+            if (opacity[0] >= 1.0f) {
+                opacity[0] = 1.0f;
+                ((Timer) e.getSource()).stop();
+            }
+            // Just a visual effect without actual opacity change
+            repaint();
+        });
+        fadeTimer.start();
     }
 
     private void initializeModernGUI() {
-        setTitle("💬 Modern Chat Client");
+        setTitle("💬 Elite Chat Client");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 700);
+        setSize(1200, 800);
         setLocationRelativeTo(null);
-        setMinimumSize(new Dimension(800, 600));
+        setMinimumSize(new Dimension(900, 650));
 
-        // Set modern look and feel
+        // Enable modern window decorations
         try {
-            // Use default look and feel
+            setUndecorated(false);
+            getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
         } catch (Exception e) {
-            // Use default
+            // Use default decorations
         }
 
-        // Main layout
-        setLayout(new BorderLayout());
+        // Set dark theme
         getContentPane().setBackground(BACKGROUND_COLOR);
+        setLayout(new BorderLayout(0, 0));
 
-        // Create modern components
-        createConnectionPanel();
-        createChatPanel();
-        createInputPanel();
+        // Create modern components with animations
+        createModernConnectionPanel();
+        createModernChatPanel();
+        createModernInputPanel();
 
-        // Add components
+        // Add components with spacing
         add(connectionPanel, BorderLayout.NORTH);
         add(chatPanel, BorderLayout.CENTER);
         add(inputPanel, BorderLayout.SOUTH);
 
-        // Add keyboard shortcuts
+        // Setup keyboard shortcuts and effects
         setupKeyboardShortcuts();
+        setupWindowEffects();
     }
 
-    private void createConnectionPanel() {
-        connectionPanel = new JPanel(new BorderLayout());
-        connectionPanel.setBackground(PRIMARY_COLOR);
-        connectionPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
+    private void createModernConnectionPanel() {
+        connectionPanel = new ModernPanel(new BorderLayout(), SURFACE_COLOR, 0, false);
+        connectionPanel.setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Left side - Connection controls
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        // Left side - Connection controls with glass morphism effect
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
         leftPanel.setOpaque(false);
 
-        // Server input with modern styling
-        serverField = createStyledTextField(serverAddress, 12);
-        portField = createStyledTextField(String.valueOf(serverPort), 6);
-        usernameField = createStyledTextField(username, 12);
+        // Create modern text fields
+        serverField = new ModernTextField(serverAddress, 12, PRIMARY_COLOR, BORDER_COLOR);
+        portField = new ModernTextField(String.valueOf(serverPort), 6, PRIMARY_COLOR, BORDER_COLOR);
+        usernameField = new ModernTextField(username, 12, PRIMARY_COLOR, BORDER_COLOR);
 
-        leftPanel.add(createStyledLabel("🌐 Server:", Color.WHITE));
+        // Add labels with glow effect
+        leftPanel.add(createGlowLabel("🌐 Server:", TEXT_COLOR));
         leftPanel.add(serverField);
-        leftPanel.add(createStyledLabel("🔌 Port:", Color.WHITE));
+        leftPanel.add(createGlowLabel("🔌 Port:", TEXT_COLOR));
         leftPanel.add(portField);
-        leftPanel.add(createStyledLabel("👤 Username:", Color.WHITE));
+        leftPanel.add(createGlowLabel("👤 Username:", TEXT_COLOR));
         leftPanel.add(usernameField);
 
-        // Connect button with modern styling
-        connectButton = createStyledButton("🔗 Connect", SUCCESS_COLOR);
-        connectButton.addActionListener(_ -> connectToServer());
-
+        // Modern connect button with pulse animation
+        connectButton = new ModernButton("� Connect", SUCCESS_COLOR);
+        connectButton.addActionListener(e -> connectToServer());
         leftPanel.add(connectButton);
 
-        // Right side - Status
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        // Right side - Status with animated indicators
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
         rightPanel.setOpaque(false);
 
-        statusLabel = new JLabel("🔴 Disconnected");
-        statusLabel.setForeground(Color.WHITE);
+        statusLabel = new AnimatedLabel("🔴 Disconnected");
+        statusLabel.setForeground(TEXT_COLOR);
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        userCountLabel = new JLabel("👥 0 online");
-        userCountLabel.setForeground(Color.WHITE);
+        userCountLabel = new AnimatedLabel("👥 0 online");
+        userCountLabel.setForeground(TEXT_SECONDARY);
         userCountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
         rightPanel.add(userCountLabel);
@@ -121,93 +519,134 @@ public class AdvancedClient extends JFrame {
         connectionPanel.add(rightPanel, BorderLayout.EAST);
     }
 
-    private void createChatPanel() {
-        chatPanel = new JPanel(new BorderLayout(10, 0));
-        chatPanel.setBackground(BACKGROUND_COLOR);
-        chatPanel.setBorder(new EmptyBorder(20, 20, 10, 20));
+    private void createModernChatPanel() {
+        chatPanel = new ModernPanel(new BorderLayout(15, 0), BACKGROUND_COLOR, 0, false);
+        chatPanel.setBorder(new EmptyBorder(20, 30, 10, 30));
 
-        // Chat area with modern styling
+        // Modern chat area with glassmorphism
         chatArea = new JTextPane();
         chatArea.setEditable(false);
-        chatArea.setBackground(CHAT_BACKGROUND);
+        chatArea.setBackground(CARD_COLOR);
+        chatArea.setForeground(TEXT_COLOR);
         chatArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        chatArea.setBorder(new CompoundBorder(
-                new LineBorder(new Color(220, 220, 220), 1, true),
-                new EmptyBorder(15, 15, 15, 15)));
+        chatArea.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Add custom document to handle text styling
+        // Custom document styling
         StyledDocument doc = chatArea.getStyledDocument();
-        addStylesToDocument(doc);
+        addAdvancedStylesToDocument(doc);
 
+        // Modern scroll pane with custom styling
         JScrollPane chatScroll = new JScrollPane(chatArea);
-        chatScroll.setBorder(BorderFactory.createTitledBorder(
-                new LineBorder(PRIMARY_COLOR, 2),
-                "💬 Chat Messages",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 14),
-                PRIMARY_COLOR));
-        chatScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        chatScroll.setBorder(new ModernTitledBorder("💬 Chat Messages", PRIMARY_COLOR));
+        chatScroll.setBackground(CARD_COLOR);
+        chatScroll.getViewport().setBackground(CARD_COLOR);
+        chatScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        chatScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        // User list with modern styling
+        // Style scrollbar
+        styleScrollBar(chatScroll);
+
+        // Modern user list with hover effects
         userListModel = new DefaultListModel<>();
         userList = new JList<>(userListModel);
         userList.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        userList.setBackground(CHAT_BACKGROUND);
-        userList.setSelectionBackground(new Color(63, 81, 181, 100));
-        userList.setBorder(new EmptyBorder(5, 5, 5, 5));
+        userList.setBackground(CARD_COLOR);
+        userList.setForeground(TEXT_COLOR);
+        userList.setSelectionBackground(new Color(88, 86, 214, 100));
+        userList.setSelectionForeground(Color.WHITE);
+        userList.setBorder(new EmptyBorder(15, 15, 15, 15));
+        userList.setCellRenderer(new ModernListCellRenderer());
 
         JScrollPane userScroll = new JScrollPane(userList);
-        userScroll.setBorder(BorderFactory.createTitledBorder(
-                new LineBorder(ACCENT_COLOR, 2),
-                "👥 Online Users (0)",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 14),
-                ACCENT_COLOR));
-        userScroll.setPreferredSize(new Dimension(200, 0));
+        userScroll.setBorder(new ModernTitledBorder("👥 Online Users (0)", ACCENT_COLOR));
+        userScroll.setPreferredSize(new Dimension(250, 0));
+        userScroll.setBackground(CARD_COLOR);
+        userScroll.getViewport().setBackground(CARD_COLOR);
+        styleScrollBar(userScroll);
 
-        chatPanel.add(chatScroll, BorderLayout.CENTER);
-        chatPanel.add(userScroll, BorderLayout.EAST);
+        // Add double-click interaction
         userList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && userList.getSelectedValue() != null) {
-                    String u = userList.getSelectedValue();
-                    messageField.setText("@" + u + " ");
+                    String user = userList.getSelectedValue();
+                    messageField.setText("@" + user + " ");
                     messageField.requestFocusInWindow();
+                    // Add selection animation
+                    animateSelection();
                 }
             }
         });
+
+        chatPanel.add(chatScroll, BorderLayout.CENTER);
+        chatPanel.add(userScroll, BorderLayout.EAST);
     }
 
-    private void createInputPanel() {
-        inputPanel = new JPanel(new BorderLayout(10, 0));
-        inputPanel.setBackground(BACKGROUND_COLOR);
-        inputPanel.setBorder(new EmptyBorder(10, 20, 20, 20));
+    private void createModernInputPanel() {
+        inputPanel = new ModernPanel(new BorderLayout(15, 0), BACKGROUND_COLOR, 0, false);
+        inputPanel.setBorder(new EmptyBorder(10, 30, 30, 30));
 
-        // Message input area
-        JPanel inputContainer = new JPanel(new BorderLayout(10, 0));
-        inputContainer.setBackground(CHAT_BACKGROUND);
-        inputContainer.setBorder(new CompoundBorder(
-                new LineBorder(new Color(200, 200, 200), 1),
-                new EmptyBorder(10, 10, 10, 10)));
+        // Message input container with glassmorphism effect
+        JPanel inputContainer = new JPanel(new BorderLayout(15, 0));
+        inputContainer.setOpaque(false);
 
-        messageField = new JTextField();
+        // Create modern message field
+        messageField = new ModernTextField("", 0, PRIMARY_COLOR, BORDER_COLOR);
         messageField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        messageField.setBorder(new EmptyBorder(5, 5, 5, 5));
         messageField.setEnabled(false);
+        messageField.setBorder(new EmptyBorder(12, 15, 12, 15));
 
-        sendButton = createStyledButton("📤 Send", PRIMARY_COLOR);
+        // Modern send button with glow effect
+        sendButton = new ModernButton("� Send", PRIMARY_COLOR);
         sendButton.setEnabled(false);
-        sendButton.addActionListener(_ -> sendMessage());
+        sendButton.addActionListener(e -> sendMessage());
+
+        // Emoji button for future enhancement
+        emojiButton = new ModernButton("😊", ACCENT_COLOR);
+        emojiButton.setEnabled(false);
+        emojiButton.addActionListener(e -> showEmojiPanel());
 
         // Enter key to send message
-        messageField.addActionListener(_ -> sendMessage());
+        messageField.addActionListener(e -> sendMessage());
 
-        // Typing indicator
+        // Advanced typing indicator with animation
+        setupAdvancedTypingIndicator();
+
+        // Create input layout
+        JPanel messagePanel = new JPanel(new BorderLayout());
+        messagePanel.setOpaque(false);
+        messagePanel.setBorder(new ModernRoundedBorder(CARD_COLOR, 12));
+        messagePanel.add(messageField, BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(emojiButton);
+        buttonPanel.add(sendButton);
+
+        inputContainer.add(messagePanel, BorderLayout.CENTER);
+        inputContainer.add(buttonPanel, BorderLayout.EAST);
+
+        inputPanel.add(inputContainer, BorderLayout.CENTER);
+
+        // Typing indicator with pulse animation
+        typingLabel = new JLabel(" ");
+        typingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        typingLabel.setForeground(TEXT_SECONDARY);
+        inputPanel.add(typingLabel, BorderLayout.SOUTH);
+    }
+
+    // Helper method to create glowing labels
+    private JLabel createGlowLabel(String text, Color color) {
+        JLabel label = new JLabel(text);
+        label.setForeground(color);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        return label;
+    }
+
+    // Advanced typing indicator setup
+    private void setupAdvancedTypingIndicator() {
         messageField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            private javax.swing.Timer typingTimer = new javax.swing.Timer(1500, evt -> sendTyping(false));
+            private final javax.swing.Timer typingTimer = new javax.swing.Timer(2000, evt -> sendTyping(false));
             {
                 typingTimer.setRepeats(false);
             }
@@ -234,69 +673,97 @@ public class AdvancedClient extends JFrame {
                 }
             }
         });
-
-        inputContainer.add(messageField, BorderLayout.CENTER);
-        inputContainer.add(sendButton, BorderLayout.EAST);
-
-        inputPanel.add(inputContainer, BorderLayout.CENTER);
-
-        typingLabel = new JLabel(" ");
-        typingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        typingLabel.setForeground(new Color(120, 120, 120));
-        inputPanel.add(typingLabel, BorderLayout.SOUTH);
     }
 
-    private JTextField createStyledTextField(String text, int columns) {
-        JTextField field = new JTextField(text, columns);
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        field.setBorder(new CompoundBorder(
-                new LineBorder(new Color(200, 200, 200), 1),
-                new EmptyBorder(5, 8, 5, 8)));
-        field.setBackground(Color.WHITE);
-        return field;
-    }
-
-    private JLabel createStyledLabel(String text, Color color) {
-        JLabel label = new JLabel(text);
-        label.setForeground(color);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        return label;
-    }
-
-    private JButton createStyledButton(String text, Color bgColor) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        button.setBackground(bgColor);
-        button.setForeground(Color.WHITE);
-        button.setBorder(new EmptyBorder(8, 16, 8, 16));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // Hover effect
-        button.addMouseListener(new MouseAdapter() {
+    // Setup window effects
+    private void setupWindowEffects() {
+        // Add window focus effects
+        addWindowFocusListener(new WindowAdapter() {
             @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(bgColor.brighter());
+            public void windowGainedFocus(WindowEvent e) {
+                statusLabel.stopPulse();
             }
 
             @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(bgColor);
+            public void windowLostFocus(WindowEvent e) {
+                if (isConnected) {
+                    statusLabel.startPulse();
+                }
             }
         });
-
-        return button;
     }
 
-    private void addStylesToDocument(StyledDocument doc) {
+    // Style scroll bars with modern design
+    private void styleScrollBar(JScrollPane scrollPane) {
+        JScrollBar vBar = scrollPane.getVerticalScrollBar();
+        JScrollBar hBar = scrollPane.getHorizontalScrollBar();
+
+        vBar.setBackground(CARD_COLOR);
+        hBar.setBackground(CARD_COLOR);
+        vBar.setUI(new ModernScrollBarUI());
+        hBar.setUI(new ModernScrollBarUI());
+    }
+
+    // Custom ScrollBar UI
+    class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+        @Override
+        protected void configureScrollBarColors() {
+            thumbColor = new Color(88, 86, 214, 100);
+            thumbDarkShadowColor = new Color(88, 86, 214, 150);
+            thumbHighlightColor = new Color(88, 86, 214, 200);
+            thumbLightShadowColor = new Color(88, 86, 214, 50);
+            trackColor = new Color(28, 28, 28);
+            trackHighlightColor = new Color(38, 38, 38);
+        }
+
+        @Override
+        protected JButton createDecreaseButton(int orientation) {
+            return createZeroButton();
+        }
+
+        @Override
+        protected JButton createIncreaseButton(int orientation) {
+            return createZeroButton();
+        }
+
+        private JButton createZeroButton() {
+            JButton button = new JButton();
+            button.setPreferredSize(new Dimension(0, 0));
+            button.setMinimumSize(new Dimension(0, 0));
+            button.setMaximumSize(new Dimension(0, 0));
+            return button;
+        }
+
+        @Override
+        protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setColor(thumbColor);
+            g2d.fillRoundRect(thumbBounds.x + 2, thumbBounds.y + 2,
+                    thumbBounds.width - 4, thumbBounds.height - 4, 6, 6);
+            g2d.dispose();
+        }
+
+        @Override
+        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setColor(trackColor);
+            g2d.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
+            g2d.dispose();
+        }
+    }
+
+    // Add advanced document styling
+    private void addAdvancedStylesToDocument(StyledDocument doc) {
         Style def = StyleContext.getDefaultStyleContext().getStyle(StyleContext.DEFAULT_STYLE);
 
         Style regular = doc.addStyle("regular", def);
-        StyleConstants.setFontFamily(def, "Segoe UI");
-        StyleConstants.setFontSize(def, 13);
+        StyleConstants.setFontFamily(regular, "Segoe UI");
+        StyleConstants.setFontSize(regular, 13);
+        StyleConstants.setForeground(regular, TEXT_COLOR);
 
         Style system = doc.addStyle("system", regular);
-        StyleConstants.setForeground(system, new Color(100, 100, 100));
+        StyleConstants.setForeground(system, TEXT_SECONDARY);
         StyleConstants.setItalic(system, true);
 
         Style user = doc.addStyle("user", regular);
@@ -305,6 +772,44 @@ public class AdvancedClient extends JFrame {
 
         Style ownMessage = doc.addStyle("own", regular);
         StyleConstants.setForeground(ownMessage, ACCENT_COLOR);
+        StyleConstants.setBold(ownMessage, true);
+
+        Style timestamp = doc.addStyle("timestamp", regular);
+        StyleConstants.setForeground(timestamp, TEXT_SECONDARY);
+        StyleConstants.setFontSize(timestamp, 11);
+    }
+
+    // Animation for user selection
+    private void animateSelection() {
+        Timer selectionTimer = new Timer(100, null);
+        final int[] pulse = { 0 };
+
+        selectionTimer.addActionListener(e -> {
+            pulse[0]++;
+            if (pulse[0] > 3) {
+                ((Timer) e.getSource()).stop();
+            }
+            userList.repaint();
+        });
+        selectionTimer.start();
+    }
+
+    // Show emoji panel (placeholder for future enhancement)
+    private void showEmojiPanel() {
+        String[] emojis = { "😊", "😂", "❤️", "👍", "🎉", "😎", "🔥", "💯" };
+        String selected = (String) JOptionPane.showInputDialog(
+                this,
+                "Choose an emoji:",
+                "Emoji Picker",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                emojis,
+                emojis[0]);
+
+        if (selected != null) {
+            messageField.setText(messageField.getText() + selected);
+            messageField.requestFocus();
+        }
     }
 
     private void setupKeyboardShortcuts() {
@@ -315,6 +820,16 @@ public class AdvancedClient extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 sendMessage();
+            }
+        });
+
+        // Escape to clear message
+        messageField.getInputMap(JComponent.WHEN_FOCUSED).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "clear");
+        messageField.getActionMap().put("clear", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messageField.setText("");
             }
         });
     }
@@ -366,6 +881,11 @@ public class AdvancedClient extends JFrame {
             return;
 
         try {
+            // Animate connection process
+            connectButton.setEnabled(false);
+            statusLabel.setText("🔄 Connecting...");
+            statusLabel.startPulse();
+
             serverAddress = serverField.getText();
             serverPort = Integer.parseInt(portField.getText());
             username = usernameField.getText();
@@ -380,20 +900,46 @@ public class AdvancedClient extends JFrame {
 
             SwingUtilities.invokeLater(() -> {
                 statusLabel.setText("🟢 Connected as " + username);
-                statusLabel.setForeground(Color.WHITE);
-                setTitle("💬 Modern Chat Client - " + username);
-                appendToChat("Connected to server as " + username + "\n", "system");
+                statusLabel.stopPulse();
+                setTitle("💬 Elite Chat Client - " + username);
+                appendToChat("🎉 Connected to server as " + username + "\n", "system");
                 updateConnectionStatus();
+
+                // Celebration animation
+                Timer celebrationTimer = new Timer(100, null);
+                final int[] count = { 0 };
+                celebrationTimer.addActionListener(e -> {
+                    count[0]++;
+                    if (count[0] > 5) {
+                        ((Timer) e.getSource()).stop();
+                    }
+                    statusLabel.setText(count[0] % 2 == 0 ? "🟢 Connected! ✨" : "🟢 Connected as " + username);
+                });
+                celebrationTimer.start();
             });
 
         } catch (IOException e) {
             SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(this, "Failed to connect: " + e.getMessage(),
-                        "Connection Error", JOptionPane.ERROR_MESSAGE);
+                statusLabel.setText("🔴 Connection failed");
+                statusLabel.stopPulse();
+                connectButton.setEnabled(true);
+
+                // Modern error dialog
+                JOptionPane.showMessageDialog(this,
+                        "Failed to connect to server:\n" + e.getMessage(),
+                        "Connection Error",
+                        JOptionPane.ERROR_MESSAGE);
             });
         } catch (NumberFormatException e) {
             SwingUtilities.invokeLater(() -> {
-                JOptionPane.showMessageDialog(this, "Invalid port number", "Error", JOptionPane.ERROR_MESSAGE);
+                statusLabel.setText("🔴 Invalid port");
+                statusLabel.stopPulse();
+                connectButton.setEnabled(true);
+
+                JOptionPane.showMessageDialog(this,
+                        "Please enter a valid port number",
+                        "Input Error",
+                        JOptionPane.ERROR_MESSAGE);
             });
         }
     }
@@ -418,12 +964,32 @@ public class AdvancedClient extends JFrame {
 
         SwingUtilities.invokeLater(() -> {
             statusLabel.setText("🔴 Disconnected");
-            statusLabel.setForeground(Color.WHITE);
-            appendToChat("You left the chat\n", "system");
+            statusLabel.stopPulse();
+            appendToChat("👋 You left the chat\n", "system");
             userListModel.clear();
             userCountLabel.setText("👥 0 online");
             updateConnectionStatus();
+
+            // Reset title
+            setTitle("💬 Elite Chat Client");
         });
+    }
+
+    private void updateConnectionStatus() {
+        boolean connected = isConnected;
+        connectButton.setEnabled(!connected);
+        sendButton.setEnabled(connected);
+        emojiButton.setEnabled(connected);
+        messageField.setEnabled(connected);
+
+        // Update field states with animation
+        serverField.setEnabled(!connected);
+        portField.setEnabled(!connected);
+        usernameField.setEnabled(!connected);
+
+        if (connected) {
+            messageField.requestFocusInWindow();
+        }
     }
 
     private void sendMessage() {
@@ -538,18 +1104,6 @@ public class AdvancedClient extends JFrame {
         } catch (BadLocationException e) {
             // Ignore
         }
-    }
-
-    private void updateConnectionStatus() {
-        boolean connected = isConnected;
-        connectButton.setEnabled(!connected);
-        sendButton.setEnabled(connected);
-        messageField.setEnabled(connected);
-
-        // Update field states
-        serverField.setEnabled(!connected);
-        portField.setEnabled(!connected);
-        usernameField.setEnabled(!connected);
     }
 
     private void sendTyping(boolean typing) {
