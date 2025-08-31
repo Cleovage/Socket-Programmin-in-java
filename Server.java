@@ -23,6 +23,7 @@ public class Server extends JFrame {
 
     // UI Components
     private JTextArea logArea;
+    
     private JButton startButton, stopButton, clearLogButton, banUserButton;
     private JLabel statusLabel, portLabel, uptimeLabel, clientCountLabel;
     private JTable clientTable;
@@ -45,22 +46,23 @@ public class Server extends JFrame {
     private JLabel totalMessagesStatLabel;
 
     public Server() {
+        threadPool = Executors.newCachedThreadPool();
         connectedClients = new ConcurrentHashMap<>();
         clientUsernames = new ConcurrentHashMap<>();
         clientConnectTimes = new ConcurrentHashMap<>();
         clientRowIndex = new ConcurrentHashMap<>();
         clientMessageCounts = new ConcurrentHashMap<>();
-        threadPool = Executors.newCachedThreadPool();
         timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-
-        // Set simple look and feel
 
         initializeGUI();
         startUIUpdateTimer();
     }
 
+    
+
     private void initializeGUI() {
         setTitle("🚀 Advanced Chat Server Control Panel");
+        setUndecorated(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -412,24 +414,18 @@ public class Server extends JFrame {
     }
 
     private void createToolbar(Color primaryColor) {
-        JPanel toolbar = new JPanel(new BorderLayout());
-        toolbar.setBackground(primaryColor);
+        ModernPanel toolbar = new ModernPanel(new BorderLayout(), primaryColor, 0, false);
         toolbar.setBorder(new CompoundBorder(
                 new MatteBorder(0, 0, 2, 0, primaryColor.darker()),
                 new EmptyBorder(10, 15, 10, 15)));
 
         // Left side - Server controls
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 10, 0), primaryColor, 0, false);
         leftPanel.setOpaque(false);
 
-        startButton = new JButton("▶ Start Server");
-        stopButton = new JButton("⏹ Stop Server");
-        clearLogButton = new JButton("🗑 Clear Log");
-
-        // Style buttons
-        styleToolbarButton(startButton, new Color(76, 175, 80));
-        styleToolbarButton(stopButton, new Color(244, 67, 54));
-        styleToolbarButton(clearLogButton, new Color(158, 158, 158));
+        startButton = new ModernButton("▶ Start Server", new Color(76, 175, 80));
+        stopButton = new ModernButton("⏹ Stop Server", new Color(244, 67, 54));
+        clearLogButton = new ModernButton("🗑 Clear Log", new Color(158, 158, 158));
 
         stopButton.setEnabled(false);
 
@@ -445,7 +441,7 @@ public class Server extends JFrame {
         leftPanel.add(clearLogButton);
 
         // Right side - Status indicators
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0), primaryColor, 0, false);
         rightPanel.setOpaque(false);
 
         statusLabel = new JLabel("⚪ Server Stopped");
@@ -488,12 +484,12 @@ public class Server extends JFrame {
     }
 
     private JPanel createDashboardTab() {
-        JPanel dashboard = new JPanel(new BorderLayout(15, 15));
+        ModernPanel dashboard = new ModernPanel(new BorderLayout(15, 15), Color.WHITE, 0, false);
         dashboard.setBorder(new EmptyBorder(20, 20, 20, 20));
         dashboard.setBackground(Color.WHITE);
 
         // Stats Panel
-        JPanel statsPanel = new JPanel(new GridLayout(2, 3, 15, 15));
+        ModernPanel statsPanel = new ModernPanel(new GridLayout(2, 3, 15, 15), Color.WHITE, 0, false);
         statsPanel.setBackground(Color.WHITE);
 
         // Create stat cards
@@ -507,7 +503,7 @@ public class Server extends JFrame {
         dashboard.add(statsPanel, BorderLayout.NORTH);
 
         // Real-time activity feed
-        JPanel activityPanel = new JPanel(new BorderLayout());
+        ModernPanel activityPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 8, true);
         activityPanel.setBorder(BorderFactory.createTitledBorder(
                 new LineBorder(new Color(200, 200, 200)),
                 "🟢 Live Activity Feed",
@@ -531,7 +527,7 @@ public class Server extends JFrame {
     }
 
     private JPanel createStatCard(String title, String value, Color color) {
-        JPanel card = new JPanel(new BorderLayout());
+        ModernPanel card = new ModernPanel(new BorderLayout(), Color.WHITE, 8, true);
         card.setBackground(Color.WHITE);
         card.setBorder(new CompoundBorder(
                 new LineBorder(color, 2),
@@ -555,27 +551,9 @@ public class Server extends JFrame {
         return card;
     }
 
-    private void styleToolbarButton(JButton button, Color color) {
-        button.setBackground(color);
-        button.setForeground(Color.WHITE);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 11));
-        button.setBorder(new EmptyBorder(8, 15, 8, 15));
-        button.setFocusPainted(false);
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    
 
-        // Add hover effect
-        button.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                button.setBackground(color.brighter());
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                button.setBackground(color);
-            }
-        });
-    }
+    
 
     private JPanel createLogTab() {
         JPanel logPanel = new JPanel(new BorderLayout());
@@ -591,11 +569,14 @@ public class Server extends JFrame {
         // Log area
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(new Font("Consolas", Font.PLAIN, 11));
-        logArea.setBackground(new Color(248, 249, 250));
+        logArea.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
+        logArea.setBackground(new Color(40, 40, 40));
+        logArea.setForeground(Color.WHITE);
         logArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane logScroll = new JScrollPane(logArea);
+        logScroll.setBorder(null);
+        logScroll.getVerticalScrollBar().setUI(new ModernScrollBarUI());
         logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         logPanel.add(logScroll, BorderLayout.CENTER);
 
@@ -603,7 +584,7 @@ public class Server extends JFrame {
     }
 
     private JPanel createClientTab() {
-        JPanel clientPanel = new JPanel(new BorderLayout());
+        ModernPanel clientPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 0, false);
         clientPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Client table
@@ -624,8 +605,8 @@ public class Server extends JFrame {
         clientPanel.add(clientScroll, BorderLayout.CENTER);
 
         // Client actions
-        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        banUserButton = new JButton("⛔ Kick User");
+        ModernPanel actionPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT), Color.WHITE, 0, false);
+        banUserButton = new ModernButton("⛔ Kick User", new Color(244, 67, 54));
         banUserButton.setEnabled(false);
         actionPanel.add(banUserButton);
 
@@ -646,14 +627,14 @@ public class Server extends JFrame {
     }
 
     private JPanel createBroadcastTab() {
-        JPanel broadcastPanel = new JPanel(new BorderLayout());
+        ModernPanel broadcastPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 0, false);
         broadcastPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         JLabel titleLabel = new JLabel("📢 Send Message to All Clients");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         broadcastPanel.add(titleLabel, BorderLayout.NORTH);
 
-        JPanel inputPanel = new JPanel(new BorderLayout(10, 10));
+        ModernPanel inputPanel = new ModernPanel(new BorderLayout(10, 10), Color.WHITE, 0, false);
         inputPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         broadcastField = new JTextField();
@@ -662,9 +643,8 @@ public class Server extends JFrame {
                 new LineBorder(new Color(200, 200, 200)),
                 new EmptyBorder(10, 10, 10, 10)));
 
-        broadcastButton = new JButton("📤 Send Broadcast");
+        broadcastButton = new ModernButton("📤 Send Broadcast", new Color(33, 150, 243));
         broadcastButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        broadcastButton.setBackground(new Color(33, 150, 243));
         broadcastButton.setForeground(Color.WHITE);
         broadcastButton.setBorder(new EmptyBorder(10, 20, 10, 20));
         broadcastButton.setEnabled(false);
@@ -691,7 +671,7 @@ public class Server extends JFrame {
     }
 
     private JPanel createSettingsTab() {
-        JPanel settingsPanel = new JPanel();
+        ModernPanel settingsPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT), Color.WHITE, 0, false);
         settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
         settingsPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -703,7 +683,7 @@ public class Server extends JFrame {
         settingsPanel.add(Box.createVerticalStrut(20));
 
         // Log level setting
-        JPanel logLevelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        ModernPanel logLevelPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT), Color.WHITE, 0, false);
         logLevelPanel.add(new JLabel("Log Level:"));
         logLevelSlider = new JSlider(1, 5, 3);
         logLevelSlider.setMajorTickSpacing(1);

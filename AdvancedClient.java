@@ -413,31 +413,6 @@ public class AdvancedClient extends JFrame {
     public AdvancedClient() {
         initializeModernGUI();
         setupNetworking();
-        // Add window transition effect
-        SwingUtilities.invokeLater(() -> {
-            setVisible(true);
-            setExtendedState(JFrame.NORMAL);
-            toFront();
-            // Fade in effect
-            fadeIn();
-        });
-    }
-
-    private void fadeIn() {
-        // Simple fade-in using a timer for component visibility
-        Timer fadeTimer = new Timer(30, null);
-        final float[] opacity = { 0.0f };
-
-        fadeTimer.addActionListener(e -> {
-            opacity[0] += 0.05f;
-            if (opacity[0] >= 1.0f) {
-                opacity[0] = 1.0f;
-                ((Timer) e.getSource()).stop();
-            }
-            // Just a visual effect without actual opacity change
-            repaint();
-        });
-        fadeTimer.start();
     }
 
     private void initializeModernGUI() {
@@ -449,7 +424,7 @@ public class AdvancedClient extends JFrame {
 
         // Enable modern window decorations
         try {
-            setUndecorated(false);
+            setUndecorated(true);
             getRootPane().setWindowDecorationStyle(JRootPane.FRAME);
         } catch (Exception e) {
             // Use default decorations
