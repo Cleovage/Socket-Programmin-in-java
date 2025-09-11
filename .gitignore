@@ -1,0 +1,35 @@
+# Compiled class files
+*.class
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+.eclipse/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Build directories
+build/
+dist/
+target/
+
+# Package files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
