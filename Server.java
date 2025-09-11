@@ -65,6 +65,9 @@ public class Server extends JFrame {
 
         initializeGUI();
         startUIUpdateTimer();
+        
+        // Initialize dashboard with correct starting values
+        synchronizeDashboard();
     }
 
     private void initializeGUI() {
@@ -130,6 +133,9 @@ public class Server extends JFrame {
                     String startMsg = "[" + LocalDateTime.now().format(timeFormatter) + "] [>] Server started on port "
                             + selectedPort;
                     addActivity(startMsg);
+                    
+                    // Synchronize dashboard after server start
+                    synchronizeDashboard();
                 });
 
                 // Start heartbeat scheduler
@@ -192,6 +198,9 @@ public class Server extends JFrame {
             stopButton.setEnabled(false);
             statusLabel.setText("[STOPPED] Server Stopped");
             addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] Server stopped");
+            
+            // Synchronize dashboard after server stop
+            synchronizeDashboard();
         });
 
         stopHeartbeat();
@@ -306,6 +315,8 @@ public class Server extends JFrame {
                 SwingUtilities.invokeLater(() -> {
                     addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] " + username + " (" + clientId
                             + ") joined");
+                    // Synchronize dashboard when client joins
+                    synchronizeDashboard();
                 });
 
                 String message;
@@ -392,6 +403,8 @@ public class Server extends JFrame {
 
             SwingUtilities.invokeLater(() -> {
                 updateClientRowOnDisconnect(clientId, leavingUsername);
+                // Synchronize dashboard when client disconnects
+                synchronizeDashboard();
             });
 
             try {
@@ -539,9 +552,19 @@ public class Server extends JFrame {
         JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         valueLabel.setForeground(color);
+        
+        // Add a small status indicator for real-time sync
+        JLabel lastUpdated = new JLabel("Live");
+        lastUpdated.setFont(new Font("Segoe UI", Font.ITALIC, 10));
+        lastUpdated.setForeground(new Color(150, 150, 150));
+
+        JPanel labelPanel = new JPanel(new BorderLayout());
+        labelPanel.setOpaque(false);
+        labelPanel.add(valueLabel, BorderLayout.CENTER);
+        labelPanel.add(lastUpdated, BorderLayout.SOUTH);
 
         card.add(titleLabel, BorderLayout.NORTH);
-        card.add(valueLabel, BorderLayout.CENTER);
+        card.add(labelPanel, BorderLayout.CENTER);
 
         // Store references to dashboard stat labels for real-time updates
         switch (type) {
@@ -739,31 +762,34 @@ public class Server extends JFrame {
     }
 
     private void updateUIStats() {
-        // Update status bar elements
+        // Update status bar elements and dashboard synchronously
+        
+        // Handle uptime for both running and stopped states
+        String uptimeStr = "00:00:00";
         if (isRunning && serverStartTime > 0) {
             long uptime = System.currentTimeMillis() - serverStartTime;
             long hours = uptime / (1000 * 60 * 60);
             long minutes = (uptime / (1000 * 60)) % 60;
             long seconds = (uptime / 1000) % 60;
-            String uptimeStr = String.format("%02d:%02d:%02d", hours, minutes, seconds);
-
+            uptimeStr = String.format("%02d:%02d:%02d", hours, minutes, seconds);
             uptimeLabel.setText(String.format("[UPTIME] Uptime: %s", uptimeStr));
-            
-            // Update dashboard uptime
-            if (dashboardUptimeLabel != null) {
-                dashboardUptimeLabel.setText(uptimeStr);
-            }
+        } else {
+            uptimeLabel.setText("[UPTIME] Uptime: 00:00:00");
+        }
+        
+        // Update dashboard uptime (always synchronized)
+        if (dashboardUptimeLabel != null) {
+            dashboardUptimeLabel.setText(uptimeStr);
         }
 
+        // Update client count for both status bar and dashboard
         int clientCount = connectedClients.size();
         clientCountLabel.setText("[CLIENTS] Clients: " + clientCount);
-        
-        // Update dashboard client count
         if (dashboardClientCountLabel != null) {
             dashboardClientCountLabel.setText(String.valueOf(clientCount));
         }
 
-        // Update memory usage for both status bar and dashboard
+        // Update memory usage for both status bar and dashboard (consistent format)
         Runtime runtime = Runtime.getRuntime();
         long maxMemory = runtime.maxMemory();
         long usedMemory = runtime.totalMemory() - runtime.freeMemory();
@@ -773,9 +799,9 @@ public class Server extends JFrame {
         memoryBar.setValue(memoryPercent);
         memoryBar.setString("[MEMORY] Memory: " + memoryPercent + "%");
         
-        // Update dashboard memory
+        // Dashboard shows memory in MB with percentage
         if (dashboardMemoryLabel != null) {
-            dashboardMemoryLabel.setText(usedMemoryMB + " MB");
+            dashboardMemoryLabel.setText(usedMemoryMB + " MB (" + memoryPercent + "%)");
         }
 
         // Update dashboard total connections
@@ -783,11 +809,59 @@ public class Server extends JFrame {
             dashboardConnectionsLabel.setText(String.valueOf(totalConnectionsEver));
         }
 
-        // Update dashboard port
+        // Update dashboard port (show current selected port, not just when running)
         if (dashboardPortLabel != null) {
             int currentPort = (Integer) portSpinner.getValue();
-            dashboardPortLabel.setText(String.valueOf(currentPort));
+            String portStatus = isRunning ? currentPort + " (Active)" : currentPort + " (Stopped)";
+            dashboardPortLabel.setText(portStatus);
         }
+        
+        // Update total messages count (ensure it's current)
+        if (totalMessagesStatLabel != null) {
+            int totalMessages = 0;
+            for (int count : clientMessageCounts.values()) {
+                totalMessages += count;
+            }
+            totalMessagesStatLabel.setText(String.valueOf(totalMessages));
+        }
+        
+        // Force repaint of dashboard elements to ensure visual updates
+        refreshDashboardVisuals();
+    }
+    
+    // Method to refresh dashboard visual indicators and colors
+    private void refreshDashboardVisuals() {
+        // Update stat card colors based on server status
+        if (dashboardClientCountLabel != null) {
+            Color clientColor = isRunning ? new Color(33, 150, 243) : new Color(158, 158, 158);
+            dashboardClientCountLabel.setForeground(clientColor);
+        }
+        
+        if (dashboardUptimeLabel != null) {
+            Color uptimeColor = isRunning ? new Color(156, 39, 176) : new Color(158, 158, 158);
+            dashboardUptimeLabel.setForeground(uptimeColor);
+        }
+        
+        if (dashboardPortLabel != null) {
+            Color portColor = isRunning ? new Color(76, 175, 80) : new Color(255, 152, 0);
+            dashboardPortLabel.setForeground(portColor);
+        }
+    }
+    
+    // Enhanced method to ensure dashboard is fully synchronized when server starts/stops
+    private void synchronizeDashboard() {
+        SwingUtilities.invokeLater(() -> {
+            updateUIStats();
+            
+            // Ensure activity feed is synchronized
+            if (dashboardActivityFeed != null && logArea != null) {
+                String logContent = logArea.getText();
+                if (!dashboardActivityFeed.getText().equals(logContent)) {
+                    dashboardActivityFeed.setText(logContent);
+                    dashboardActivityFeed.setCaretPosition(dashboardActivityFeed.getDocument().getLength());
+                }
+            }
+        });
     }
 
     // Method to add activity to both server log and dashboard activity feed
@@ -840,12 +914,17 @@ public class Server extends JFrame {
 
     private void incrementMessageCount(String clientId) {
         clientMessageCounts.merge(clientId, 1, Integer::sum);
+        
+        // Update dashboard total messages immediately
         if (totalMessagesStatLabel != null) {
-            int sum = 0;
-            for (int c : clientMessageCounts.values())
-                sum += c;
-            totalMessagesStatLabel.setText(String.valueOf(sum));
+            int totalMessages = 0;
+            for (int count : clientMessageCounts.values()) {
+                totalMessages += count;
+            }
+            totalMessagesStatLabel.setText(String.valueOf(totalMessages));
         }
+        
+        // Update client table
         Integer row = clientRowIndex.get(clientId);
         if (row != null && row < clientTableModel.getRowCount()) {
             clientTableModel.setValueAt(clientMessageCounts.get(clientId), row, 4);
