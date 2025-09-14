@@ -49,6 +49,17 @@ public class Server extends JFrame {
     private long serverStartTime;
     private int totalConnectionsEver = 0;
 
+    // Modern Dark Theme Colors (matching AdvancedClient)
+    private Color primaryColor;
+    private Color accentColor;
+    private Color successColor;
+    private Color backgroundColor;
+    private Color surfaceColor;
+    private Color cardColor;
+    private Color textColor;
+    private Color textSecondary;
+    private Color borderColor;
+
     private DateTimeFormatter timeFormatter;
     private javax.swing.Timer uiUpdateTimer;
     private ScheduledExecutorService heartbeatScheduler;
@@ -69,26 +80,56 @@ public class Server extends JFrame {
         synchronizeDashboard();
     }
 
+    // Get best available font for emoji rendering
+    private Font getEmojiCompatibleFont(int style, int size) {
+        // Try different fonts that support emojis
+        String[] emojiSupportingFonts = {
+            "Segoe UI Emoji",     // Windows
+            "Apple Color Emoji",  // macOS
+            "Noto Color Emoji",   // Linux
+            "Segoe UI",           // Fallback
+            "Arial Unicode MS",   // Fallback
+            "SansSerif"          // Last resort
+        };
+        
+        for (String fontName : emojiSupportingFonts) {
+            Font font = new Font(fontName, style, size);
+            if (font.getFamily().equals(fontName)) {
+                return font;
+            }
+        }
+        
+        // Fallback to default
+        return new Font("SansSerif", style, size);
+    }
+
     private void initializeGUI() {
         setTitle("[SERVER] Advanced Chat Server Control Panel");
         setUndecorated(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Set custom colors
-        Color primaryColor = new Color(25, 118, 210);
-        Color backgroundColor = new Color(245, 245, 245);
+        // Initialize Modern Dark Theme Color Scheme (matching AdvancedClient)
+        this.primaryColor = new Color(88, 86, 214);     // Purple
+        this.accentColor = new Color(255, 92, 88);      // Red
+        this.successColor = new Color(72, 187, 120);    // Green
+        this.backgroundColor = new Color(18, 18, 18);   // Dark gray
+        this.surfaceColor = new Color(28, 28, 28);      // Medium gray
+        this.cardColor = new Color(38, 38, 38);         // Light gray
+        this.textColor = new Color(240, 240, 240);      // White
+        this.textSecondary = new Color(160, 160, 160);  // Light gray
+        this.borderColor = new Color(58, 58, 58);       // Border
 
         getContentPane().setBackground(backgroundColor);
 
         // Create top toolbar
-        createToolbar(primaryColor);
+        createToolbar();
 
         // Create tabbed interface
         createTabbedInterface();
 
         // Create status bar
-        createStatusBar(primaryColor);
+        createStatusBar();
 
         setSize(1200, 800);
         setLocationRelativeTo(null);
@@ -419,18 +460,18 @@ public class Server extends JFrame {
         }
     }
 
-    private void createToolbar(Color primaryColor) {
-        ModernPanel toolbar = new ModernPanel(new BorderLayout(), primaryColor, 0, false);
+    private void createToolbar() {
+        ModernPanel toolbar = new ModernPanel(new BorderLayout(), backgroundColor, 0, false);
         toolbar.setBorder(new CompoundBorder(
-                new MatteBorder(0, 0, 2, 0, primaryColor.darker()),
+                new MatteBorder(0, 0, 2, 0, primaryColor),
                 new EmptyBorder(10, 15, 10, 15)));
 
         // Left side - Server controls
-        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 10, 0), primaryColor, 0, false);
+        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 10, 0), backgroundColor, 0, false);
         leftPanel.setOpaque(false);
 
-        startButton = new ModernButton("[>] Start Server", new Color(76, 175, 80));
-        stopButton = new ModernButton("[STOP] Stop Server", new Color(244, 67, 54));
+        startButton = new ModernButton("[>] Start Server", successColor);  // Success green
+        stopButton = new ModernButton("[STOP] Stop Server", accentColor); // Accent red
         clearLogButton = new ModernButton("[CLEAR] Clear Log", new Color(158, 158, 158));
 
         stopButton.setEnabled(false);
@@ -438,8 +479,17 @@ public class Server extends JFrame {
         // Port selection
         portSpinner = new JSpinner(new SpinnerNumberModel(PORT, 1024, 65535, 1));
         portSpinner.setPreferredSize(new Dimension(80, 30));
+        
+        // Apply dark theme to spinner
+        portSpinner.setBackground(cardColor);
+        portSpinner.setForeground(textColor);
+        portSpinner.setBorder(BorderFactory.createLineBorder(borderColor));
 
-        leftPanel.add(new JLabel("[PORT] Port:"));
+        JLabel portLabel = new JLabel("[PORT] Port:");
+        portLabel.setForeground(textColor);
+        portLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
+        leftPanel.add(portLabel);
         leftPanel.add(portSpinner);
         leftPanel.add(Box.createHorizontalStrut(10));
         leftPanel.add(startButton);
@@ -447,11 +497,11 @@ public class Server extends JFrame {
         leftPanel.add(clearLogButton);
 
         // Right side - Status indicators
-        ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0), primaryColor, 0, false);
+        ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0), backgroundColor, 0, false);
         rightPanel.setOpaque(false);
 
         statusLabel = new JLabel("[OFFLINE] Server Stopped");
-        statusLabel.setForeground(Color.WHITE);
+        statusLabel.setForeground(textColor);
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
 
         rightPanel.add(statusLabel);
@@ -475,6 +525,11 @@ public class Server extends JFrame {
     private void createTabbedInterface() {
         mainTabs = new JTabbedPane(JTabbedPane.TOP);
         mainTabs.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
+        // Apply dark theme to tabbed pane
+        mainTabs.setBackground(backgroundColor);
+        mainTabs.setForeground(textColor);
+        mainTabs.setBorder(BorderFactory.createEmptyBorder());
 
         // Dashboard Tab
         mainTabs.addTab("[DASHBOARD] Dashboard", createDashboardTab());
@@ -495,18 +550,18 @@ public class Server extends JFrame {
     }
 
     private JPanel createDashboardTab() {
-        ModernPanel dashboard = new ModernPanel(new BorderLayout(15, 15), Color.WHITE, 0, false);
+        ModernPanel dashboard = new ModernPanel(new BorderLayout(15, 15), backgroundColor, 0, false);
         dashboard.setBorder(new EmptyBorder(20, 20, 20, 20));
-        dashboard.setBackground(Color.WHITE);
+        dashboard.setBackground(backgroundColor);
 
         // Stats Panel
-        ModernPanel statsPanel = new ModernPanel(new GridLayout(2, 3, 15, 15), Color.WHITE, 0, false);
-        statsPanel.setBackground(Color.WHITE);
+        ModernPanel statsPanel = new ModernPanel(new GridLayout(2, 3, 15, 15), backgroundColor, 0, false);
+        statsPanel.setBackground(backgroundColor);
 
-        // Create stat cards with references stored for updates
-        statsPanel.add(createStatCard("[CLIENTS] Connected Clients", "0", new Color(33, 150, 243), "clients"));
-        statsPanel.add(createStatCard("[MESSAGES] Total Messages", "0", new Color(76, 175, 80), "messages"));
-        statsPanel.add(createStatCard("[UPTIME] Server Uptime", "00:00:00", new Color(156, 39, 176), "uptime"));
+        // Create stat cards with references stored for updates using new color scheme
+        statsPanel.add(createStatCard("[CLIENTS] Connected Clients", "0", primaryColor, "clients"));
+        statsPanel.add(createStatCard("[MESSAGES] Total Messages", "0", successColor, "messages"));
+        statsPanel.add(createStatCard("[UPTIME] Server Uptime", "00:00:00", accentColor, "uptime"));
         statsPanel.add(createStatCard("[PORT] Port Status", String.valueOf(PORT), new Color(255, 152, 0), "port"));
         statsPanel.add(createStatCard("[MEMORY] Memory Usage", "0 MB", new Color(244, 67, 54), "memory"));
         statsPanel.add(createStatCard("[CONNECTIONS] Total Connections", "0", new Color(0, 150, 136), "connections"));
@@ -520,12 +575,13 @@ public class Server extends JFrame {
                 "[LIVE] Live Activity Feed",
                 TitledBorder.LEFT, TitledBorder.TOP,
                 new Font("Segoe UI", Font.BOLD, 14)));
-        activityPanel.setBackground(Color.WHITE);
+        activityPanel.setBackground(backgroundColor);
 
         dashboardActivityFeed = new JTextArea(15, 40);
         dashboardActivityFeed.setEditable(false);
-        dashboardActivityFeed.setFont(new Font("Consolas", Font.PLAIN, 11));
-        dashboardActivityFeed.setBackground(new Color(248, 249, 250));
+        dashboardActivityFeed.setFont(getEmojiCompatibleFont(Font.PLAIN, 11));
+        dashboardActivityFeed.setBackground(cardColor);
+        dashboardActivityFeed.setForeground(textColor);
         dashboardActivityFeed.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane activityScroll = new JScrollPane(dashboardActivityFeed);
@@ -538,24 +594,24 @@ public class Server extends JFrame {
     }
 
     private JPanel createStatCard(String title, String value, Color color, String type) {
-        ModernPanel card = new ModernPanel(new BorderLayout(), Color.WHITE, 8, true);
-        card.setBackground(Color.WHITE);
+        ModernPanel card = new ModernPanel(new BorderLayout(), cardColor, 8, true);
+        card.setBackground(cardColor);
         card.setBorder(new CompoundBorder(
                 new LineBorder(color, 2),
                 new EmptyBorder(15, 15, 15, 15)));
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        titleLabel.setForeground(new Color(100, 100, 100));
+        titleLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 12));
+        titleLabel.setForeground(textSecondary);
 
         JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        valueLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 24));
         valueLabel.setForeground(color);
 
         // Add a small status indicator for real-time sync
         JLabel lastUpdated = new JLabel("Live");
-        lastUpdated.setFont(new Font("Segoe UI", Font.ITALIC, 10));
-        lastUpdated.setForeground(new Color(150, 150, 150));
+        lastUpdated.setFont(getEmojiCompatibleFont(Font.ITALIC, 10));
+        lastUpdated.setForeground(textSecondary);
 
         JPanel labelPanel = new JPanel(new BorderLayout());
         labelPanel.setOpaque(false);
@@ -592,9 +648,9 @@ public class Server extends JFrame {
         // Log area
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-        logArea.setBackground(new Color(40, 40, 40));
-        logArea.setForeground(Color.WHITE);
+        logArea.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        logArea.setBackground(cardColor);
+        logArea.setForeground(textColor);
         logArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane logScroll = new JScrollPane(logArea);
@@ -661,13 +717,16 @@ public class Server extends JFrame {
         inputPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
 
         broadcastField = new JTextField();
-        broadcastField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        broadcastField.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        broadcastField.setBackground(cardColor);
+        broadcastField.setForeground(textColor);
+        broadcastField.setCaretColor(textColor);
         broadcastField.setBorder(new CompoundBorder(
-                new LineBorder(new Color(200, 200, 200)),
+                new LineBorder(borderColor),
                 new EmptyBorder(10, 10, 10, 10)));
 
-        broadcastButton = new ModernButton("[SEND] Send Broadcast", new Color(33, 150, 243));
-        broadcastButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        broadcastButton = new ModernButton("[SEND] Send Broadcast", primaryColor);
+        broadcastButton.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
         broadcastButton.setForeground(Color.WHITE);
         broadcastButton.setBorder(new EmptyBorder(10, 20, 10, 20));
         broadcastButton.setEnabled(false);
@@ -719,9 +778,9 @@ public class Server extends JFrame {
         return settingsPanel;
     }
 
-    private void createStatusBar(Color primaryColor) {
+    private void createStatusBar() {
         JPanel statusBar = new JPanel(new BorderLayout());
-        statusBar.setBackground(primaryColor.darker());
+        statusBar.setBackground(surfaceColor); // Surface color
         statusBar.setBorder(new EmptyBorder(5, 10, 5, 10));
 
         JPanel leftStatus = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
@@ -731,9 +790,15 @@ public class Server extends JFrame {
         uptimeLabel = new JLabel("[UPTIME] Uptime: 00:00:00");
         clientCountLabel = new JLabel("[CLIENTS] Clients: 0");
 
-        portLabel.setForeground(Color.WHITE);
-        uptimeLabel.setForeground(Color.WHITE);
-        clientCountLabel.setForeground(Color.WHITE);
+        portLabel.setForeground(textColor);
+        uptimeLabel.setForeground(textColor);
+        clientCountLabel.setForeground(textColor);
+        
+        // Apply consistent font styling
+        Font statusFont = new Font("Segoe UI", Font.PLAIN, 11);
+        portLabel.setFont(statusFont);
+        uptimeLabel.setFont(statusFont);
+        clientCountLabel.setFont(statusFont);
 
         leftStatus.add(portLabel);
         leftStatus.add(uptimeLabel);
@@ -747,6 +812,9 @@ public class Server extends JFrame {
         memoryBar.setStringPainted(true);
         memoryBar.setString("Memory: 0%");
         memoryBar.setPreferredSize(new Dimension(120, 20));
+        memoryBar.setBackground(cardColor); // Card color
+        memoryBar.setForeground(primaryColor);
+        memoryBar.setBorder(BorderFactory.createLineBorder(borderColor));
         rightStatus.add(memoryBar);
 
         statusBar.add(leftStatus, BorderLayout.WEST);

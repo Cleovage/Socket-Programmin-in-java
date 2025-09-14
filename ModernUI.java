@@ -29,7 +29,7 @@ class ModernButton extends JButton {
         setCursor(new Cursor(Cursor.HAND_CURSOR));
         setBorder(new EmptyBorder(12, 24, 12, 24));
 
-        animationTimer = new javax.swing.Timer(16, _ -> {
+        animationTimer = new javax.swing.Timer(16, e -> {
             if (isHovering && animationProgress < 1.0f) {
                 animationProgress = Math.min(1.0f, animationProgress + 0.1f);
                 repaint();
@@ -117,7 +117,7 @@ class ModernTextField extends JTextField {
         setCaretColor(focusColor);
         setBorder(new EmptyBorder(8, 12, 8, 12));
 
-        animationTimer = new javax.swing.Timer(16, _ -> {
+        animationTimer = new javax.swing.Timer(16, e -> {
             if (isFocused && animationProgress < 1.0f) {
                 animationProgress = Math.min(1.0f, animationProgress + 0.1f);
                 repaint();
