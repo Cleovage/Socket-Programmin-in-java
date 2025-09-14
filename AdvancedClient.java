@@ -6,378 +6,6 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.text.*;
 
-// Custom Modern Components
-class ModernButton extends JButton {
-    private Color bgColor;
-    private Color hoverColor;
-    private Timer animationTimer;
-    private float animationProgress = 0.0f;
-    private boolean isHovering = false;
-
-    public ModernButton(String text, Color bgColor) {
-        super(text);
-        this.bgColor = bgColor;
-        this.hoverColor = bgColor.brighter();
-
-        setContentAreaFilled(false);
-        setBorderPainted(false);
-        setFocusPainted(false);
-        setFont(new Font("Segoe UI", Font.BOLD, 12));
-        setForeground(Color.WHITE);
-        setCursor(new Cursor(Cursor.HAND_CURSOR));
-        setBorder(new EmptyBorder(12, 24, 12, 24));
-
-        animationTimer = new Timer(16, e -> {
-            if (isHovering && animationProgress < 1.0f) {
-                animationProgress = Math.min(1.0f, animationProgress + 0.1f);
-                repaint();
-            } else if (!isHovering && animationProgress > 0.0f) {
-                animationProgress = Math.max(0.0f, animationProgress - 0.1f);
-                repaint();
-            }
-        });
-
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                isHovering = true;
-                animationTimer.start();
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                isHovering = false;
-                animationTimer.start();
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-                animationProgress = 1.0f;
-                repaint();
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                animationProgress = isHovering ? 0.8f : 0.0f;
-                repaint();
-            }
-        });
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Interpolate colors
-        Color currentColor = interpolateColor(bgColor, hoverColor, animationProgress);
-        g2d.setColor(currentColor);
-
-        // Draw rounded rectangle with shadow
-        g2d.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 8, 8);
-
-        // Add subtle glow effect when hovering
-        if (animationProgress > 0) {
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, animationProgress * 0.3f));
-            g2d.setColor(Color.WHITE);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-        }
-
-        g2d.dispose();
-        super.paintComponent(g);
-    }
-
-    private Color interpolateColor(Color start, Color end, float factor) {
-        int r = (int) (start.getRed() + factor * (end.getRed() - start.getRed()));
-        int g = (int) (start.getGreen() + factor * (end.getGreen() - start.getGreen()));
-        int b = (int) (start.getBlue() + factor * (end.getBlue() - start.getBlue()));
-        return new Color(Math.max(0, Math.min(255, r)),
-                Math.max(0, Math.min(255, g)),
-                Math.max(0, Math.min(255, b)));
-    }
-}
-
-class ModernTextField extends JTextField {
-    private Color focusColor;
-    private Color borderColor;
-    private boolean isFocused = false;
-    private Timer animationTimer;
-    private float animationProgress = 0.0f;
-
-    public ModernTextField(String text, int columns, Color focusColor, Color borderColor) {
-        super(text, columns);
-        this.focusColor = focusColor;
-        this.borderColor = borderColor;
-
-        setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        setBackground(new Color(48, 48, 48));
-        setForeground(new Color(240, 240, 240));
-        setCaretColor(focusColor);
-        setBorder(new EmptyBorder(8, 12, 8, 12));
-
-        animationTimer = new Timer(16, e -> {
-            if (isFocused && animationProgress < 1.0f) {
-                animationProgress = Math.min(1.0f, animationProgress + 0.1f);
-                repaint();
-            } else if (!isFocused && animationProgress > 0.0f) {
-                animationProgress = Math.max(0.0f, animationProgress - 0.1f);
-                repaint();
-            }
-        });
-
-        addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                isFocused = true;
-                animationTimer.start();
-            }
-
-            @Override
-            public void focusLost(FocusEvent e) {
-                isFocused = false;
-                animationTimer.start();
-            }
-        });
-    }
-
-    @Override
-    protected void paintBorder(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        Color currentColor = interpolateColor(borderColor, focusColor, animationProgress);
-        g2d.setColor(currentColor);
-        g2d.setStroke(new BasicStroke(1 + animationProgress * 2));
-        g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 6, 6);
-
-        g2d.dispose();
-    }
-
-    private Color interpolateColor(Color start, Color end, float factor) {
-        int r = (int) (start.getRed() + factor * (end.getRed() - start.getRed()));
-        int g = (int) (start.getGreen() + factor * (end.getGreen() - start.getGreen()));
-        int b = (int) (start.getBlue() + factor * (end.getBlue() - start.getBlue()));
-        return new Color(Math.max(0, Math.min(255, r)),
-                Math.max(0, Math.min(255, g)),
-                Math.max(0, Math.min(255, b)));
-    }
-}
-
-class ModernPanel extends JPanel {
-    private Color backgroundColor;
-    private int cornerRadius;
-    private boolean hasShadow;
-
-    public ModernPanel(LayoutManager layout, Color backgroundColor, int cornerRadius, boolean hasShadow) {
-        super(layout);
-        this.backgroundColor = backgroundColor;
-        this.cornerRadius = cornerRadius;
-        this.hasShadow = hasShadow;
-        setOpaque(false);
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        if (hasShadow) {
-            // Draw shadow
-            g2d.setColor(new Color(0, 0, 0, 30));
-            g2d.fillRoundRect(4, 4, getWidth() - 4, getHeight() - 4, cornerRadius, cornerRadius);
-        }
-
-        // Draw main background
-        g2d.setColor(backgroundColor);
-        g2d.fillRoundRect(0, 0, getWidth() - (hasShadow ? 4 : 0),
-                getHeight() - (hasShadow ? 4 : 0), cornerRadius, cornerRadius);
-
-        g2d.dispose();
-        super.paintComponent(g);
-    }
-}
-
-// Modern UI Components - Continued
-class AnimatedLabel extends JLabel {
-    private Timer pulseTimer;
-    private float pulseOpacity = 1.0f;
-    private boolean isPulsing = false;
-
-    public AnimatedLabel(String text) {
-        super(text);
-        pulseTimer = new Timer(50, e -> {
-            if (isPulsing) {
-                pulseOpacity += 0.1f;
-                if (pulseOpacity >= 1.0f) {
-                    pulseOpacity = 0.7f;
-                }
-                repaint();
-            }
-        });
-    }
-
-    public void startPulse() {
-        isPulsing = true;
-        pulseTimer.start();
-    }
-
-    public void stopPulse() {
-        isPulsing = false;
-        pulseTimer.stop();
-        pulseOpacity = 1.0f;
-        repaint();
-    }
-
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        if (isPulsing) {
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulseOpacity));
-        }
-        super.paintComponent(g2d);
-        g2d.dispose();
-    }
-}
-
-class ModernTitledBorder extends AbstractBorder {
-    private String title;
-    private Color color;
-    private Font font;
-
-    public ModernTitledBorder(String title, Color color) {
-        this.title = title;
-        this.color = color;
-        this.font = new Font("Segoe UI", Font.BOLD, 12);
-    }
-
-    @Override
-    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Draw border
-        g2d.setColor(color);
-        g2d.setStroke(new BasicStroke(2.0f));
-        g2d.drawRoundRect(x + 1, y + 10, width - 2, height - 12, 8, 8);
-
-        // Draw title background
-        FontMetrics fm = g2d.getFontMetrics(font);
-        int titleWidth = fm.stringWidth(title) + 16;
-        g2d.setColor(new Color(28, 28, 28));
-        g2d.fillRoundRect(x + 15, y, titleWidth, 20, 10, 10);
-
-        // Draw title
-        g2d.setColor(color);
-        g2d.setFont(font);
-        g2d.drawString(title, x + 23, y + 14);
-
-        g2d.dispose();
-    }
-
-    @Override
-    public Insets getBorderInsets(Component c) {
-        return new Insets(20, 10, 10, 10);
-    }
-}
-
-class ModernRoundedBorder extends AbstractBorder {
-    private Color color;
-    private int radius;
-
-    public ModernRoundedBorder(Color color, int radius) {
-        this.color = color;
-        this.radius = radius;
-    }
-
-    @Override
-    public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(color);
-        g2d.fillRoundRect(x, y, width, height, radius, radius);
-        g2d.dispose();
-    }
-
-    @Override
-    public Insets getBorderInsets(Component c) {
-        return new Insets(2, 2, 2, 2);
-    }
-}
-
-class ModernListCellRenderer extends DefaultListCellRenderer {
-    @Override
-    public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-            boolean isSelected, boolean cellHasFocus) {
-        super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-        setBorder(new EmptyBorder(8, 12, 8, 12));
-        setFont(new Font("Segoe UI", Font.PLAIN, 12));
-
-        if (isSelected) {
-            setBackground(new Color(88, 86, 214, 150));
-            setForeground(Color.WHITE);
-        } else {
-            setBackground(new Color(38, 38, 38));
-            setForeground(new Color(240, 240, 240));
-        }
-
-        // Add online indicator
-        setText("[ONLINE] " + value.toString());
-
-        return this;
-    }
-}
-
-class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
-    @Override
-    protected void configureScrollBarColors() {
-        thumbColor = new Color(88, 86, 214, 100);
-        thumbDarkShadowColor = new Color(88, 86, 214, 150);
-        thumbHighlightColor = new Color(88, 86, 214, 200);
-        thumbLightShadowColor = new Color(88, 86, 214, 50);
-        trackColor = new Color(28, 28, 28);
-        trackHighlightColor = new Color(38, 38, 38);
-    }
-
-    @Override
-    protected JButton createDecreaseButton(int orientation) {
-        return createZeroButton();
-    }
-
-    @Override
-    protected JButton createIncreaseButton(int orientation) {
-        return createZeroButton();
-    }
-
-    private JButton createZeroButton() {
-        JButton button = new JButton();
-        button.setPreferredSize(new Dimension(0, 0));
-        button.setMinimumSize(new Dimension(0, 0));
-        button.setMaximumSize(new Dimension(0, 0));
-        return button;
-    }
-
-    @Override
-    protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(thumbColor);
-        g2d.fillRoundRect(thumbBounds.x + 2, thumbBounds.y + 2,
-                thumbBounds.width - 4, thumbBounds.height - 4, 6, 6);
-        g2d.dispose();
-    }
-
-    @Override
-    protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setColor(trackColor);
-        g2d.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
-        g2d.dispose();
-    }
-}
-
-// Modern UI Components - Continued
-
 public class AdvancedClient extends JFrame {
     private Socket socket;
     private BufferedReader input;
@@ -391,7 +19,7 @@ public class AdvancedClient extends JFrame {
     private JList<String> userList;
     private DefaultListModel<String> userListModel;
     private ModernPanel connectionPanel, chatPanel, inputPanel;
-    private AnimatedLabel statusLabel, userCountLabel;
+    private JLabel statusLabel, userCountLabel;
     private JLabel typingLabel;
     private ModernTextField serverField, portField, usernameField;
 
@@ -471,11 +99,11 @@ public class AdvancedClient extends JFrame {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
         rightPanel.setOpaque(false);
 
-        statusLabel = new AnimatedLabel("[OFFLINE] Disconnected");
+        statusLabel = new JLabel("[OFFLINE] Disconnected");
         statusLabel.setForeground(TEXT_COLOR);
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        userCountLabel = new AnimatedLabel("[USERS] 0 online");
+        userCountLabel = new JLabel("[USERS] 0 online");
         userCountLabel.setForeground(TEXT_SECONDARY);
         userCountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
@@ -504,7 +132,7 @@ public class AdvancedClient extends JFrame {
 
         // Modern scroll pane with custom styling
         JScrollPane chatScroll = new JScrollPane(chatArea);
-        chatScroll.setBorder(new ModernTitledBorder("[CHAT] Chat Messages", PRIMARY_COLOR));
+        chatScroll.setBorder(BorderFactory.createTitledBorder("[CHAT] Chat Messages"));
         chatScroll.setBackground(CARD_COLOR);
         chatScroll.getViewport().setBackground(CARD_COLOR);
         chatScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -522,10 +150,10 @@ public class AdvancedClient extends JFrame {
         userList.setSelectionBackground(new Color(88, 86, 214, 100));
         userList.setSelectionForeground(Color.WHITE);
         userList.setBorder(new EmptyBorder(15, 15, 15, 15));
-        userList.setCellRenderer(new ModernListCellRenderer());
+        // userList.setCellRenderer(new DefaultListCellRenderer());
 
         JScrollPane userScroll = new JScrollPane(userList);
-        userScroll.setBorder(new ModernTitledBorder("[USERS] Online Users (0)", ACCENT_COLOR));
+        userScroll.setBorder(BorderFactory.createTitledBorder("[USERS] Online Users (0)"));
         userScroll.setPreferredSize(new Dimension(250, 0));
         userScroll.setBackground(CARD_COLOR);
         userScroll.getViewport().setBackground(CARD_COLOR);
@@ -582,7 +210,7 @@ public class AdvancedClient extends JFrame {
         // Create input layout
         JPanel messagePanel = new JPanel(new BorderLayout());
         messagePanel.setOpaque(false);
-        messagePanel.setBorder(new ModernRoundedBorder(CARD_COLOR, 12));
+        messagePanel.setBorder(new LineBorder(CARD_COLOR, 2));
         messagePanel.add(messageField, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -648,13 +276,13 @@ public class AdvancedClient extends JFrame {
         addWindowFocusListener(new WindowAdapter() {
             @Override
             public void windowGainedFocus(WindowEvent e) {
-                statusLabel.stopPulse();
+                // statusLabel.stopPulse();
             }
 
             @Override
             public void windowLostFocus(WindowEvent e) {
                 if (isConnected) {
-                    statusLabel.startPulse();
+                    // statusLabel.startPulse();
                 }
             }
         });
@@ -669,55 +297,6 @@ public class AdvancedClient extends JFrame {
         hBar.setBackground(CARD_COLOR);
         vBar.setUI(new ModernScrollBarUI());
         hBar.setUI(new ModernScrollBarUI());
-    }
-
-    // Custom ScrollBar UI
-    class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
-        @Override
-        protected void configureScrollBarColors() {
-            thumbColor = new Color(88, 86, 214, 100);
-            thumbDarkShadowColor = new Color(88, 86, 214, 150);
-            thumbHighlightColor = new Color(88, 86, 214, 200);
-            thumbLightShadowColor = new Color(88, 86, 214, 50);
-            trackColor = new Color(28, 28, 28);
-            trackHighlightColor = new Color(38, 38, 38);
-        }
-
-        @Override
-        protected JButton createDecreaseButton(int orientation) {
-            return createZeroButton();
-        }
-
-        @Override
-        protected JButton createIncreaseButton(int orientation) {
-            return createZeroButton();
-        }
-
-        private JButton createZeroButton() {
-            JButton button = new JButton();
-            button.setPreferredSize(new Dimension(0, 0));
-            button.setMinimumSize(new Dimension(0, 0));
-            button.setMaximumSize(new Dimension(0, 0));
-            return button;
-        }
-
-        @Override
-        protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
-            Graphics2D g2d = (Graphics2D) g.create();
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setColor(thumbColor);
-            g2d.fillRoundRect(thumbBounds.x + 2, thumbBounds.y + 2,
-                    thumbBounds.width - 4, thumbBounds.height - 4, 6, 6);
-            g2d.dispose();
-        }
-
-        @Override
-        protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
-            Graphics2D g2d = (Graphics2D) g.create();
-            g2d.setColor(trackColor);
-            g2d.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
-            g2d.dispose();
-        }
     }
 
     // Add advanced document styling
@@ -851,7 +430,7 @@ public class AdvancedClient extends JFrame {
             // Animate connection process
             connectButton.setEnabled(false);
             statusLabel.setText("[CONNECTING] Connecting...");
-            statusLabel.startPulse();
+            // statusLabel.startPulse();
 
             serverAddress = serverField.getText();
             serverPort = Integer.parseInt(portField.getText());
@@ -867,7 +446,7 @@ public class AdvancedClient extends JFrame {
 
             SwingUtilities.invokeLater(() -> {
                 statusLabel.setText("[CONNECTED] Connected as " + username);
-                statusLabel.stopPulse();
+                // statusLabel.stopPulse();
                 setTitle("[CLIENT] Elite Chat Client - " + username);
                 appendToChat("[WELCOME] Connected to server as " + username + "\n", "system");
                 updateConnectionStatus();
@@ -889,7 +468,7 @@ public class AdvancedClient extends JFrame {
         } catch (IOException e) {
             SwingUtilities.invokeLater(() -> {
                 statusLabel.setText("[ERROR] Connection failed");
-                statusLabel.stopPulse();
+                // statusLabel.stopPulse();
                 connectButton.setEnabled(true);
 
                 // Modern error dialog
@@ -901,7 +480,7 @@ public class AdvancedClient extends JFrame {
         } catch (NumberFormatException e) {
             SwingUtilities.invokeLater(() -> {
                 statusLabel.setText("[ERROR] Invalid port");
-                statusLabel.stopPulse();
+                // statusLabel.stopPulse();
                 connectButton.setEnabled(true);
 
                 JOptionPane.showMessageDialog(this,
@@ -932,7 +511,7 @@ public class AdvancedClient extends JFrame {
 
         SwingUtilities.invokeLater(() -> {
             statusLabel.setText("[OFFLINE] Disconnected");
-            statusLabel.stopPulse();
+            // statusLabel.stopPulse();
             appendToChat("[BYE] You left the chat\n", "system");
             userListModel.clear();
             userCountLabel.setText("[USERS] 0 online");

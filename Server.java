@@ -2,8 +2,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.*;
+import java.time.format.*;
 import java.util.*;
 import java.util.concurrent.*;
 import javax.swing.*;
@@ -36,6 +36,15 @@ public class Server extends JFrame {
     private JToggleButton autoScrollToggle;
     private JSlider logLevelSlider;
 
+    // Dashboard stat labels for real-time updates
+    private JLabel dashboardClientCountLabel;
+    private JLabel totalMessagesStatLabel;
+    private JLabel dashboardUptimeLabel;
+    private JLabel dashboardPortLabel;
+    private JLabel dashboardMemoryLabel;
+    private JLabel dashboardConnectionsLabel;
+    private JTextArea dashboardActivityFeed;
+
     // Stats tracking
     private long serverStartTime;
     private int totalConnectionsEver = 0;
@@ -43,7 +52,6 @@ public class Server extends JFrame {
     private DateTimeFormatter timeFormatter;
     private javax.swing.Timer uiUpdateTimer;
     private ScheduledExecutorService heartbeatScheduler;
-    private JLabel totalMessagesStatLabel;
 
     public Server() {
         threadPool = Executors.newCachedThreadPool();
@@ -56,6 +64,9 @@ public class Server extends JFrame {
 
         initializeGUI();
         startUIUpdateTimer();
+
+        // Initialize dashboard with correct starting values
+        synchronizeDashboard();
     }
 
     private void initializeGUI() {
@@ -120,10 +131,10 @@ public class Server extends JFrame {
 
                     String startMsg = "[" + LocalDateTime.now().format(timeFormatter) + "] [>] Server started on port "
                             + selectedPort;
-                    logArea.append(startMsg + "\n");
-                    if (autoScrollToggle.isSelected()) {
-                        logArea.setCaretPosition(logArea.getDocument().getLength());
-                    }
+                    addActivity(startMsg);
+
+                    // Synchronize dashboard after server start
+                    synchronizeDashboard();
                 });
 
                 // Start heartbeat scheduler
@@ -137,10 +148,7 @@ public class Server extends JFrame {
                     SwingUtilities.invokeLater(() -> {
                         String connectMsg = "[" + LocalDateTime.now().format(timeFormatter)
                                 + "] [+] New client connected: " + clientId;
-                        logArea.append(connectMsg + "\n");
-                        if (autoScrollToggle.isSelected()) {
-                            logArea.setCaretPosition(logArea.getDocument().getLength());
-                        }
+                        addActivity(connectMsg);
                     });
 
                     ClientHandler handler = new ClientHandler(clientSocket, clientId);
@@ -153,10 +161,7 @@ public class Server extends JFrame {
                     SwingUtilities.invokeLater(() -> {
                         String errorMsg = "[" + LocalDateTime.now().format(timeFormatter) + "] [ERROR] Server error: "
                                 + e.getMessage();
-                        logArea.append(errorMsg + "\n");
-                        if (autoScrollToggle.isSelected()) {
-                            logArea.setCaretPosition(logArea.getDocument().getLength());
-                        }
+                        addActivity(errorMsg);
                     });
                 }
             }
@@ -184,14 +189,17 @@ public class Server extends JFrame {
             clientRowIndex.clear();
             clientMessageCounts.clear();
         } catch (IOException e) {
-            logArea.append("Error stopping server: " + e.getMessage() + "\n");
+            addActivity("Error stopping server: " + e.getMessage());
         }
 
         SwingUtilities.invokeLater(() -> {
             startButton.setEnabled(true);
             stopButton.setEnabled(false);
             statusLabel.setText("[STOPPED] Server Stopped");
-            logArea.append("[" + LocalDateTime.now().format(timeFormatter) + "] Server stopped\n");
+            addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] Server stopped");
+
+            // Synchronize dashboard after server stop
+            synchronizeDashboard();
         });
 
         stopHeartbeat();
@@ -252,8 +260,8 @@ public class Server extends JFrame {
                 fromHandler.sendMessage(msg); // echo to sender
                 incrementMessageCount(fromClientId);
             }
-            SwingUtilities.invokeLater(() -> logArea
-                    .append("[" + timestamp + "] [PM] " + fromUser + " -> " + toUsername + ": " + content + "\n"));
+            SwingUtilities.invokeLater(() -> addActivity(
+                    "[" + timestamp + "] [PM] " + fromUser + " -> " + toUsername + ": " + content));
         } else {
             ClientHandler fromHandler = connectedClients.get(fromClientId);
             if (fromHandler != null) {
@@ -304,16 +312,18 @@ public class Server extends JFrame {
                 broadcastUserList();
 
                 SwingUtilities.invokeLater(() -> {
-                    logArea.append("[" + LocalDateTime.now().format(timeFormatter) + "] " + username + " (" + clientId
-                            + ") joined\n");
+                    addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] " + username + " (" + clientId
+                            + ") joined");
+                    // Synchronize dashboard when client joins
+                    synchronizeDashboard();
                 });
 
                 String message;
                 while (isConnected && (message = input.readLine()) != null) {
                     final String finalMessage = message;
                     SwingUtilities.invokeLater(() -> {
-                        logArea.append("[" + LocalDateTime.now().format(timeFormatter) + "] [" + username + "]: "
-                                + finalMessage + "\n");
+                        addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] [" + username + "]: "
+                                + finalMessage);
                     });
 
                     if (message.startsWith("PONG")) {
@@ -358,8 +368,8 @@ public class Server extends JFrame {
             } catch (IOException e) {
                 if (isConnected) {
                     SwingUtilities.invokeLater(() -> {
-                        logArea.append("[" + LocalDateTime.now().format(timeFormatter) + "] Client " + clientId
-                                + " error: " + e.getMessage() + "\n");
+                        addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] Client " + clientId
+                                + " error: " + e.getMessage());
                     });
                 }
             } finally {
@@ -392,6 +402,8 @@ public class Server extends JFrame {
 
             SwingUtilities.invokeLater(() -> {
                 updateClientRowOnDisconnect(clientId, leavingUsername);
+                // Synchronize dashboard when client disconnects
+                synchronizeDashboard();
             });
 
             try {
@@ -448,9 +460,14 @@ public class Server extends JFrame {
         toolbar.add(rightPanel, BorderLayout.EAST);
 
         // Add action listeners
-        startButton.addActionListener(_ -> startServer());
-        stopButton.addActionListener(_ -> stopServer());
-        clearLogButton.addActionListener(_ -> logArea.setText(""));
+        startButton.addActionListener(e -> startServer());
+        stopButton.addActionListener(e -> stopServer());
+        clearLogButton.addActionListener(e -> {
+            logArea.setText("");
+            if (dashboardActivityFeed != null) {
+                dashboardActivityFeed.setText("");
+            }
+        });
 
         add(toolbar, BorderLayout.NORTH);
     }
@@ -486,13 +503,13 @@ public class Server extends JFrame {
         ModernPanel statsPanel = new ModernPanel(new GridLayout(2, 3, 15, 15), Color.WHITE, 0, false);
         statsPanel.setBackground(Color.WHITE);
 
-        // Create stat cards
-        statsPanel.add(createStatCard("[CLIENTS] Connected Clients", "0", new Color(33, 150, 243)));
-        statsPanel.add(createStatCard("[MESSAGES] Total Messages", "0", new Color(76, 175, 80)));
-        statsPanel.add(createStatCard("[UPTIME] Server Uptime", "00:00:00", new Color(156, 39, 176)));
-        statsPanel.add(createStatCard("[PORT] Port Status", String.valueOf(PORT), new Color(255, 152, 0)));
-        statsPanel.add(createStatCard("[MEMORY] Memory Usage", "0 MB", new Color(244, 67, 54)));
-        statsPanel.add(createStatCard("[CONNECTIONS] Total Connections", "0", new Color(0, 150, 136)));
+        // Create stat cards with references stored for updates
+        statsPanel.add(createStatCard("[CLIENTS] Connected Clients", "0", new Color(33, 150, 243), "clients"));
+        statsPanel.add(createStatCard("[MESSAGES] Total Messages", "0", new Color(76, 175, 80), "messages"));
+        statsPanel.add(createStatCard("[UPTIME] Server Uptime", "00:00:00", new Color(156, 39, 176), "uptime"));
+        statsPanel.add(createStatCard("[PORT] Port Status", String.valueOf(PORT), new Color(255, 152, 0), "port"));
+        statsPanel.add(createStatCard("[MEMORY] Memory Usage", "0 MB", new Color(244, 67, 54), "memory"));
+        statsPanel.add(createStatCard("[CONNECTIONS] Total Connections", "0", new Color(0, 150, 136), "connections"));
 
         dashboard.add(statsPanel, BorderLayout.NORTH);
 
@@ -505,13 +522,13 @@ public class Server extends JFrame {
                 new Font("Segoe UI", Font.BOLD, 14)));
         activityPanel.setBackground(Color.WHITE);
 
-        JTextArea activityFeed = new JTextArea(15, 40);
-        activityFeed.setEditable(false);
-        activityFeed.setFont(new Font("Consolas", Font.PLAIN, 11));
-        activityFeed.setBackground(new Color(248, 249, 250));
-        activityFeed.setBorder(new EmptyBorder(10, 10, 10, 10));
+        dashboardActivityFeed = new JTextArea(15, 40);
+        dashboardActivityFeed.setEditable(false);
+        dashboardActivityFeed.setFont(new Font("Consolas", Font.PLAIN, 11));
+        dashboardActivityFeed.setBackground(new Color(248, 249, 250));
+        dashboardActivityFeed.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JScrollPane activityScroll = new JScrollPane(activityFeed);
+        JScrollPane activityScroll = new JScrollPane(dashboardActivityFeed);
         activityScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         activityPanel.add(activityScroll, BorderLayout.CENTER);
 
@@ -520,7 +537,7 @@ public class Server extends JFrame {
         return dashboard;
     }
 
-    private JPanel createStatCard(String title, String value, Color color) {
+    private JPanel createStatCard(String title, String value, Color color, String type) {
         ModernPanel card = new ModernPanel(new BorderLayout(), Color.WHITE, 8, true);
         card.setBackground(Color.WHITE);
         card.setBorder(new CompoundBorder(
@@ -535,11 +552,27 @@ public class Server extends JFrame {
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         valueLabel.setForeground(color);
 
-        card.add(titleLabel, BorderLayout.NORTH);
-        card.add(valueLabel, BorderLayout.CENTER);
+        // Add a small status indicator for real-time sync
+        JLabel lastUpdated = new JLabel("Live");
+        lastUpdated.setFont(new Font("Segoe UI", Font.ITALIC, 10));
+        lastUpdated.setForeground(new Color(150, 150, 150));
 
-        if (title.contains("Total Messages")) {
-            totalMessagesStatLabel = valueLabel;
+        JPanel labelPanel = new JPanel(new BorderLayout());
+        labelPanel.setOpaque(false);
+        labelPanel.add(valueLabel, BorderLayout.CENTER);
+        labelPanel.add(lastUpdated, BorderLayout.SOUTH);
+
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(labelPanel, BorderLayout.CENTER);
+
+        // Store references to dashboard stat labels for real-time updates
+        switch (type) {
+            case "clients" -> dashboardClientCountLabel = valueLabel;
+            case "messages" -> totalMessagesStatLabel = valueLabel;
+            case "uptime" -> dashboardUptimeLabel = valueLabel;
+            case "port" -> dashboardPortLabel = valueLabel;
+            case "memory" -> dashboardMemoryLabel = valueLabel;
+            case "connections" -> dashboardConnectionsLabel = valueLabel;
         }
 
         return card;
@@ -611,7 +644,7 @@ public class Server extends JFrame {
         });
 
         // Kick selected user
-        banUserButton.addActionListener(_ -> kickSelectedClient());
+        banUserButton.addActionListener(e -> kickSelectedClient());
 
         return clientPanel;
     }
@@ -645,17 +678,17 @@ public class Server extends JFrame {
         broadcastPanel.add(inputPanel, BorderLayout.CENTER);
 
         // Wire broadcast action
-        broadcastButton.addActionListener(_ -> {
+        broadcastButton.addActionListener(e -> {
             String msg = broadcastField.getText().trim();
             if (!msg.isEmpty()) {
                 broadcastMessage(msg, "server", "CHAT");
                 String ts = LocalDateTime.now().format(timeFormatter);
-                logArea.append("[" + ts + "] [Broadcast]: " + msg + "\n");
+                addActivity("[" + ts + "] [Broadcast]: " + msg);
                 broadcastField.setText("");
             }
         });
         // Enter to send
-        broadcastField.addActionListener(_ -> broadcastButton.doClick());
+        broadcastField.addActionListener(e -> broadcastButton.doClick());
 
         return broadcastPanel;
     }
@@ -723,30 +756,140 @@ public class Server extends JFrame {
     }
 
     private void startUIUpdateTimer() {
-        uiUpdateTimer = new javax.swing.Timer(1000, _ -> updateUIStats());
+        uiUpdateTimer = new javax.swing.Timer(1000, e -> updateUIStats());
         uiUpdateTimer.start();
     }
 
     private void updateUIStats() {
+        // Update status bar elements and dashboard synchronously
+
+        // Handle uptime for both running and stopped states
+        String uptimeStr = "00:00:00";
         if (isRunning && serverStartTime > 0) {
             long uptime = System.currentTimeMillis() - serverStartTime;
             long hours = uptime / (1000 * 60 * 60);
             long minutes = (uptime / (1000 * 60)) % 60;
             long seconds = (uptime / 1000) % 60;
-
-            uptimeLabel.setText(String.format("[UPTIME] Uptime: %02d:%02d:%02d", hours, minutes, seconds));
+            uptimeStr = String.format("%02d:%02d:%02d", hours, minutes, seconds);
+            uptimeLabel.setText(String.format("[UPTIME] Uptime: %s", uptimeStr));
+        } else {
+            uptimeLabel.setText("[UPTIME] Uptime: 00:00:00");
         }
 
-        clientCountLabel.setText("[CLIENTS] Clients: " + connectedClients.size());
+        // Update dashboard uptime (always synchronized)
+        if (dashboardUptimeLabel != null) {
+            dashboardUptimeLabel.setText(uptimeStr);
+        }
 
-        // Update memory usage
+        // Update client count for both status bar and dashboard
+        int clientCount = connectedClients.size();
+        clientCountLabel.setText("[CLIENTS] Clients: " + clientCount);
+        if (dashboardClientCountLabel != null) {
+            dashboardClientCountLabel.setText(String.valueOf(clientCount));
+        }
+
+        // Update memory usage for both status bar and dashboard (consistent format)
         Runtime runtime = Runtime.getRuntime();
         long maxMemory = runtime.maxMemory();
         long usedMemory = runtime.totalMemory() - runtime.freeMemory();
         int memoryPercent = (int) ((usedMemory * 100) / maxMemory);
+        long usedMemoryMB = usedMemory / (1024 * 1024);
 
         memoryBar.setValue(memoryPercent);
         memoryBar.setString("[MEMORY] Memory: " + memoryPercent + "%");
+
+        // Dashboard shows memory in MB with percentage
+        if (dashboardMemoryLabel != null) {
+            dashboardMemoryLabel.setText(usedMemoryMB + " MB (" + memoryPercent + "%)");
+        }
+
+        // Update dashboard total connections
+        if (dashboardConnectionsLabel != null) {
+            dashboardConnectionsLabel.setText(String.valueOf(totalConnectionsEver));
+        }
+
+        // Update dashboard port (show current selected port, not just when running)
+        if (dashboardPortLabel != null) {
+            int currentPort = (Integer) portSpinner.getValue();
+            String portStatus = isRunning ? currentPort + " (Active)" : currentPort + " (Stopped)";
+            dashboardPortLabel.setText(portStatus);
+        }
+
+        // Update total messages count (ensure it's current)
+        if (totalMessagesStatLabel != null) {
+            int totalMessages = 0;
+            for (int count : clientMessageCounts.values()) {
+                totalMessages += count;
+            }
+            totalMessagesStatLabel.setText(String.valueOf(totalMessages));
+        }
+
+        // Force repaint of dashboard elements to ensure visual updates
+        refreshDashboardVisuals();
+    }
+
+    // Method to refresh dashboard visual indicators and colors
+    private void refreshDashboardVisuals() {
+        // Update stat card colors based on server status
+        if (dashboardClientCountLabel != null) {
+            Color clientColor = isRunning ? new Color(33, 150, 243) : new Color(158, 158, 158);
+            dashboardClientCountLabel.setForeground(clientColor);
+        }
+
+        if (dashboardUptimeLabel != null) {
+            Color uptimeColor = isRunning ? new Color(156, 39, 176) : new Color(158, 158, 158);
+            dashboardUptimeLabel.setForeground(uptimeColor);
+        }
+
+        if (dashboardPortLabel != null) {
+            Color portColor = isRunning ? new Color(76, 175, 80) : new Color(255, 152, 0);
+            dashboardPortLabel.setForeground(portColor);
+        }
+    }
+
+    // Enhanced method to ensure dashboard is fully synchronized when server
+    // starts/stops
+    private void synchronizeDashboard() {
+        SwingUtilities.invokeLater(() -> {
+            updateUIStats();
+
+            // Ensure activity feed is synchronized
+            if (dashboardActivityFeed != null && logArea != null) {
+                String logContent = logArea.getText();
+                if (!dashboardActivityFeed.getText().equals(logContent)) {
+                    dashboardActivityFeed.setText(logContent);
+                    dashboardActivityFeed.setCaretPosition(dashboardActivityFeed.getDocument().getLength());
+                }
+            }
+        });
+    }
+
+    // Method to add activity to both server log and dashboard activity feed
+    private void addActivity(String message) {
+        // Add to server log
+        logArea.append(message + "\n");
+        if (autoScrollToggle.isSelected()) {
+            logArea.setCaretPosition(logArea.getDocument().getLength());
+        }
+
+        // Add to dashboard activity feed (synchronized)
+        if (dashboardActivityFeed != null) {
+            dashboardActivityFeed.append(message + "\n");
+            // Auto-scroll activity feed
+            dashboardActivityFeed.setCaretPosition(dashboardActivityFeed.getDocument().getLength());
+
+            // Keep activity feed to reasonable size (max 1000 lines)
+            String text = dashboardActivityFeed.getText();
+            String[] lines = text.split("\n");
+            if (lines.length > 1000) {
+                StringBuilder trimmed = new StringBuilder();
+                for (int i = lines.length - 1000; i < lines.length; i++) {
+                    trimmed.append(lines[i]).append("\n");
+                }
+                dashboardActivityFeed.setText(trimmed.toString());
+                dashboardActivityFeed.setCaretPosition(dashboardActivityFeed.getDocument().getLength());
+            }
+        }
     }
 
     private void addClientToTable(String clientId, String username) {
@@ -765,18 +908,23 @@ public class Server extends JFrame {
             clientTableModel.setValueAt("Offline", row, 3);
         }
         String ts = LocalDateTime.now().format(timeFormatter);
-        logArea.append("[" + ts + "] " + (username != null ? username : clientId) + " disconnected\n");
+        addActivity("[" + ts + "] " + (username != null ? username : clientId) + " disconnected");
         updateClientCountLabel();
     }
 
     private void incrementMessageCount(String clientId) {
         clientMessageCounts.merge(clientId, 1, Integer::sum);
+
+        // Update dashboard total messages immediately
         if (totalMessagesStatLabel != null) {
-            int sum = 0;
-            for (int c : clientMessageCounts.values())
-                sum += c;
-            totalMessagesStatLabel.setText(String.valueOf(sum));
+            int totalMessages = 0;
+            for (int count : clientMessageCounts.values()) {
+                totalMessages += count;
+            }
+            totalMessagesStatLabel.setText(String.valueOf(totalMessages));
         }
+
+        // Update client table
         Integer row = clientRowIndex.get(clientId);
         if (row != null && row < clientTableModel.getRowCount()) {
             clientTableModel.setValueAt(clientMessageCounts.get(clientId), row, 4);
@@ -823,8 +971,8 @@ public class Server extends JFrame {
                 long now = System.currentTimeMillis();
                 for (ClientHandler handler : new ArrayList<>(connectedClients.values())) {
                     if (now - handler.lastPongTime > 90_000) { // 90s timeout
-                        SwingUtilities.invokeLater(() -> logArea.append("[" + ts + "] No PONG from "
-                                + clientUsernames.get(handler.clientId) + ", disconnecting...\n"));
+                        SwingUtilities.invokeLater(() -> addActivity("[" + ts + "] No PONG from "
+                                + clientUsernames.get(handler.clientId) + ", disconnecting..."));
                         handler.disconnect();
                     }
                 }
