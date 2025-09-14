@@ -43,6 +43,29 @@ public class AdvancedClient extends JFrame {
         setupNetworking();
     }
 
+    // Get best available font for emoji rendering
+    private Font getEmojiCompatibleFont(int style, int size) {
+        // Try different fonts that support emojis
+        String[] emojiSupportingFonts = {
+            "Segoe UI Emoji",     // Windows
+            "Apple Color Emoji",  // macOS
+            "Noto Color Emoji",   // Linux
+            "Segoe UI",           // Fallback
+            "Arial Unicode MS",   // Fallback
+            "SansSerif"          // Last resort
+        };
+        
+        for (String fontName : emojiSupportingFonts) {
+            Font font = new Font(fontName, style, size);
+            if (font.getFamily().equals(fontName)) {
+                return font;
+            }
+        }
+        
+        // Fallback to default
+        return new Font("SansSerif", style, size);
+    }
+
     private void initializeModernGUI() {
         setTitle("[CLIENT] Elite Chat Client");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -123,7 +146,7 @@ public class AdvancedClient extends JFrame {
         chatArea.setEditable(false);
         chatArea.setBackground(CARD_COLOR);
         chatArea.setForeground(TEXT_COLOR);
-        chatArea.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        chatArea.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
         chatArea.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         // Custom document styling
@@ -187,7 +210,7 @@ public class AdvancedClient extends JFrame {
 
         // Create modern message field
         messageField = new ModernTextField("", 0, PRIMARY_COLOR, BORDER_COLOR);
-        messageField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        messageField.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
         messageField.setEnabled(false);
         messageField.setBorder(new EmptyBorder(12, 15, 12, 15));
 
@@ -340,9 +363,13 @@ public class AdvancedClient extends JFrame {
         selectionTimer.start();
     }
 
-    // Show emoji panel (placeholder for future enhancement)
+    // Show emoji panel with Unicode emojis
     private void showEmojiPanel() {
-        String[] emojis = { ":)", ":(", ":D", ":P", ":(", ":*", "<3", ":)" };
+        String[] emojis = { 
+            "😀", "😂", "😍", "😊", "😎", "😢", "😡", "😭",
+            "👍", "👎", "❤️", "💯", "🔥", "✨", "🎉", "👌",
+            "🤔", "😴", "🙄", "😘", "🥰", "😋", "😜", "🤗"
+        };
         String selected = (String) JOptionPane.showInputDialog(
                 this,
                 "Choose an emoji:",
