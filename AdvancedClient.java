@@ -47,21 +47,21 @@ public class AdvancedClient extends JFrame {
     private Font getEmojiCompatibleFont(int style, int size) {
         // Try different fonts that support emojis
         String[] emojiSupportingFonts = {
-            "Segoe UI Emoji",     // Windows
-            "Apple Color Emoji",  // macOS
-            "Noto Color Emoji",   // Linux
-            "Segoe UI",           // Fallback
-            "Arial Unicode MS",   // Fallback
-            "SansSerif"          // Last resort
+                "Segoe UI Emoji", // Windows
+                "Apple Color Emoji", // macOS
+                "Noto Color Emoji", // Linux
+                "Segoe UI", // Fallback
+                "Arial Unicode MS", // Fallback
+                "SansSerif" // Last resort
         };
-        
+
         for (String fontName : emojiSupportingFonts) {
             Font font = new Font(fontName, style, size);
             if (font.getFamily().equals(fontName)) {
                 return font;
             }
         }
-        
+
         // Fallback to default
         return new Font("SansSerif", style, size);
     }
@@ -96,39 +96,65 @@ public class AdvancedClient extends JFrame {
         connectionPanel = new ModernPanel(new BorderLayout(), SURFACE_COLOR, 0, false);
         connectionPanel.setBorder(new EmptyBorder(20, 30, 20, 30));
 
-        // Left side - Connection controls with glass morphism effect
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
+        // Initialize connection fields
+        serverField = new ModernTextField("localhost", 0, PRIMARY_COLOR, BORDER_COLOR);
+        serverField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        serverField.setPreferredSize(new Dimension(120, 30));
+
+        portField = new ModernTextField("12345", 0, PRIMARY_COLOR, BORDER_COLOR);
+        portField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        portField.setPreferredSize(new Dimension(80, 30));
+
+        usernameField = new ModernTextField("", 0, PRIMARY_COLOR, BORDER_COLOR);
+        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        usernameField.setPreferredSize(new Dimension(120, 30));
+
+        // Left side - Connection controls with improved alignment
+        JPanel leftPanel = new JPanel(new GridBagLayout());
         leftPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 10, 0, 10);
+        gbc.anchor = GridBagConstraints.WEST;
 
-        // Create modern text fields
-        serverField = new ModernTextField(serverAddress, 12, PRIMARY_COLOR, BORDER_COLOR);
-        portField = new ModernTextField(String.valueOf(serverPort), 6, PRIMARY_COLOR, BORDER_COLOR);
-        usernameField = new ModernTextField(username, 12, PRIMARY_COLOR, BORDER_COLOR);
+        // Server field
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        leftPanel.add(createGlowLabel("[SERVER] Server:", TEXT_COLOR), gbc);
+        gbc.gridx = 1;
+        leftPanel.add(serverField, gbc);
 
-        // Add labels with glow effect
-        leftPanel.add(createGlowLabel("[SERVER] Server:", TEXT_COLOR));
-        leftPanel.add(serverField);
-        leftPanel.add(createGlowLabel("[PORT] Port:", TEXT_COLOR));
-        leftPanel.add(portField);
-        leftPanel.add(createGlowLabel("[USER] Username:", TEXT_COLOR));
-        leftPanel.add(usernameField);
+        // Port field
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        leftPanel.add(createGlowLabel("[PORT] Port:", TEXT_COLOR), gbc);
+        gbc.gridx = 3;
+        leftPanel.add(portField, gbc);
 
-        // Modern connect button with pulse animation
+        // Username field
+        gbc.gridx = 4;
+        gbc.gridy = 0;
+        leftPanel.add(createGlowLabel("[USER] Username:", TEXT_COLOR), gbc);
+        gbc.gridx = 5;
+        leftPanel.add(usernameField, gbc);
+
+        // Connect button
+        gbc.gridx = 6;
+        gbc.gridy = 0;
         connectButton = new ModernButton("[CONNECT] Connect", SUCCESS_COLOR);
-        connectButton.addActionListener(e -> connectToServer());
-        leftPanel.add(connectButton);
+        connectButton.addActionListener(_ -> connectToServer());
+        leftPanel.add(connectButton, gbc);
 
-        // Right side - Status with animated indicators
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
+        // Right side - Status with improved alignment
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 25, 5));
         rightPanel.setOpaque(false);
 
         statusLabel = new JLabel("[OFFLINE] Disconnected");
         statusLabel.setForeground(TEXT_COLOR);
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
 
         userCountLabel = new JLabel("[USERS] 0 online");
         userCountLabel.setForeground(TEXT_SECONDARY);
-        userCountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        userCountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         rightPanel.add(userCountLabel);
         rightPanel.add(statusLabel);
@@ -141,13 +167,13 @@ public class AdvancedClient extends JFrame {
         chatPanel = new ModernPanel(new BorderLayout(15, 0), BACKGROUND_COLOR, 0, false);
         chatPanel.setBorder(new EmptyBorder(20, 30, 10, 30));
 
-        // Modern chat area with glassmorphism
+        // Modern chat area with improved readability
         chatArea = new JTextPane();
         chatArea.setEditable(false);
         chatArea.setBackground(CARD_COLOR);
         chatArea.setForeground(TEXT_COLOR);
-        chatArea.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
-        chatArea.setBorder(new EmptyBorder(20, 20, 20, 20));
+        chatArea.setFont(getEmojiCompatibleFont(Font.PLAIN, 15));
+        chatArea.setBorder(new EmptyBorder(25, 25, 25, 25));
 
         // Custom document styling
         StyledDocument doc = chatArea.getStyledDocument();
@@ -164,15 +190,15 @@ public class AdvancedClient extends JFrame {
         // Style scrollbar
         styleScrollBar(chatScroll);
 
-        // Modern user list with hover effects
+        // Modern user list with improved readability
         userListModel = new DefaultListModel<>();
         userList = new JList<>(userListModel);
-        userList.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        userList.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         userList.setBackground(CARD_COLOR);
         userList.setForeground(TEXT_COLOR);
         userList.setSelectionBackground(new Color(88, 86, 214, 100));
         userList.setSelectionForeground(Color.WHITE);
-        userList.setBorder(new EmptyBorder(15, 15, 15, 15));
+        userList.setBorder(new EmptyBorder(20, 20, 20, 20));
         // userList.setCellRenderer(new DefaultListCellRenderer());
 
         JScrollPane userScroll = new JScrollPane(userList);
@@ -217,26 +243,26 @@ public class AdvancedClient extends JFrame {
         // Modern send button with glow effect
         sendButton = new ModernButton("[SEND] Send", PRIMARY_COLOR);
         sendButton.setEnabled(false);
-        sendButton.addActionListener(e -> sendMessage());
+        sendButton.addActionListener(_ -> sendMessage());
 
         // Emoji button for future enhancement
         emojiButton = new ModernButton("[EMOJI] :)", ACCENT_COLOR);
         emojiButton.setEnabled(false);
-        emojiButton.addActionListener(e -> showEmojiPanel());
+        emojiButton.addActionListener(_ -> showEmojiPanel());
 
         // Enter key to send message
-        messageField.addActionListener(e -> sendMessage());
+        messageField.addActionListener(_ -> sendMessage());
 
         // Advanced typing indicator with animation
         setupAdvancedTypingIndicator();
 
-        // Create input layout
+        // Create input layout with better alignment
         JPanel messagePanel = new JPanel(new BorderLayout());
         messagePanel.setOpaque(false);
         messagePanel.setBorder(new LineBorder(CARD_COLOR, 2));
         messagePanel.add(messageField, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 5));
         buttonPanel.setOpaque(false);
         buttonPanel.add(emojiButton);
         buttonPanel.add(sendButton);
@@ -246,9 +272,9 @@ public class AdvancedClient extends JFrame {
 
         inputPanel.add(inputContainer, BorderLayout.CENTER);
 
-        // Typing indicator with pulse animation
+        // Typing indicator with improved readability
         typingLabel = new JLabel(" ");
-        typingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        typingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         typingLabel.setForeground(TEXT_SECONDARY);
         inputPanel.add(typingLabel, BorderLayout.SOUTH);
     }
@@ -264,7 +290,7 @@ public class AdvancedClient extends JFrame {
     // Advanced typing indicator setup
     private void setupAdvancedTypingIndicator() {
         messageField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            private final javax.swing.Timer typingTimer = new javax.swing.Timer(2000, evt -> sendTyping(false));
+            private final javax.swing.Timer typingTimer = new javax.swing.Timer(2000, _ -> sendTyping(false));
             {
                 typingTimer.setRepeats(false);
             }
@@ -328,12 +354,13 @@ public class AdvancedClient extends JFrame {
 
         Style regular = doc.addStyle("regular", def);
         StyleConstants.setFontFamily(regular, "Segoe UI");
-        StyleConstants.setFontSize(regular, 13);
+        StyleConstants.setFontSize(regular, 15);
         StyleConstants.setForeground(regular, TEXT_COLOR);
 
         Style system = doc.addStyle("system", regular);
         StyleConstants.setForeground(system, TEXT_SECONDARY);
         StyleConstants.setItalic(system, true);
+        StyleConstants.setFontSize(system, 14);
 
         Style user = doc.addStyle("user", regular);
         StyleConstants.setForeground(user, PRIMARY_COLOR);
@@ -345,7 +372,7 @@ public class AdvancedClient extends JFrame {
 
         Style timestamp = doc.addStyle("timestamp", regular);
         StyleConstants.setForeground(timestamp, TEXT_SECONDARY);
-        StyleConstants.setFontSize(timestamp, 11);
+        StyleConstants.setFontSize(timestamp, 13);
     }
 
     // Animation for user selection
@@ -365,10 +392,10 @@ public class AdvancedClient extends JFrame {
 
     // Show emoji panel with Unicode emojis
     private void showEmojiPanel() {
-        String[] emojis = { 
-            "😀", "😂", "😍", "😊", "😎", "😢", "😡", "😭",
-            "👍", "👎", "❤️", "💯", "🔥", "✨", "🎉", "👌",
-            "🤔", "😴", "🙄", "😘", "🥰", "😋", "😜", "🤗"
+        String[] emojis = {
+                "😀", "😂", "😍", "😊", "😎", "😢", "😡", "😭",
+                "👍", "👎", "❤️", "💯", "🔥", "✨", "🎉", "👌",
+                "🤔", "😴", "🙄", "😘", "🥰", "😋", "😜", "🤗"
         };
         String selected = (String) JOptionPane.showInputDialog(
                 this,

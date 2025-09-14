@@ -84,21 +84,21 @@ public class Server extends JFrame {
     private Font getEmojiCompatibleFont(int style, int size) {
         // Try different fonts that support emojis
         String[] emojiSupportingFonts = {
-            "Segoe UI Emoji",     // Windows
-            "Apple Color Emoji",  // macOS
-            "Noto Color Emoji",   // Linux
-            "Segoe UI",           // Fallback
-            "Arial Unicode MS",   // Fallback
-            "SansSerif"          // Last resort
+                "Segoe UI Emoji", // Windows
+                "Apple Color Emoji", // macOS
+                "Noto Color Emoji", // Linux
+                "Segoe UI", // Fallback
+                "Arial Unicode MS", // Fallback
+                "SansSerif" // Last resort
         };
-        
+
         for (String fontName : emojiSupportingFonts) {
             Font font = new Font(fontName, style, size);
             if (font.getFamily().equals(fontName)) {
                 return font;
             }
         }
-        
+
         // Fallback to default
         return new Font("SansSerif", style, size);
     }
@@ -110,15 +110,15 @@ public class Server extends JFrame {
         setLayout(new BorderLayout());
 
         // Initialize Modern Dark Theme Color Scheme (matching AdvancedClient)
-        this.primaryColor = new Color(88, 86, 214);     // Purple
-        this.accentColor = new Color(255, 92, 88);      // Red
-        this.successColor = new Color(72, 187, 120);    // Green
-        this.backgroundColor = new Color(18, 18, 18);   // Dark gray
-        this.surfaceColor = new Color(28, 28, 28);      // Medium gray
-        this.cardColor = new Color(38, 38, 38);         // Light gray
-        this.textColor = new Color(240, 240, 240);      // White
-        this.textSecondary = new Color(160, 160, 160);  // Light gray
-        this.borderColor = new Color(58, 58, 58);       // Border
+        this.primaryColor = new Color(88, 86, 214); // Purple
+        this.accentColor = new Color(255, 92, 88); // Red
+        this.successColor = new Color(72, 187, 120); // Green
+        this.backgroundColor = new Color(18, 18, 18); // Dark gray
+        this.surfaceColor = new Color(28, 28, 28); // Medium gray
+        this.cardColor = new Color(38, 38, 38); // Light gray
+        this.textColor = new Color(240, 240, 240); // White
+        this.textSecondary = new Color(160, 160, 160); // Light gray
+        this.borderColor = new Color(58, 58, 58); // Border
 
         getContentPane().setBackground(backgroundColor);
 
@@ -466,43 +466,43 @@ public class Server extends JFrame {
                 new MatteBorder(0, 0, 2, 0, primaryColor),
                 new EmptyBorder(10, 15, 10, 15)));
 
-        // Left side - Server controls
-        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 10, 0), backgroundColor, 0, false);
+        // Left side - Server controls with improved alignment
+        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 15, 5), backgroundColor, 0, false);
         leftPanel.setOpaque(false);
 
-        startButton = new ModernButton("[>] Start Server", successColor);  // Success green
-        stopButton = new ModernButton("[STOP] Stop Server", accentColor); // Accent red
+        startButton = new ModernButton("[>] Start Server", successColor);
+        stopButton = new ModernButton("[STOP] Stop Server", accentColor);
         clearLogButton = new ModernButton("[CLEAR] Clear Log", new Color(158, 158, 158));
 
         stopButton.setEnabled(false);
 
-        // Port selection
+        // Port selection with improved styling
         portSpinner = new JSpinner(new SpinnerNumberModel(PORT, 1024, 65535, 1));
-        portSpinner.setPreferredSize(new Dimension(80, 30));
-        
+        portSpinner.setPreferredSize(new Dimension(90, 35));
+
         // Apply dark theme to spinner
         portSpinner.setBackground(cardColor);
         portSpinner.setForeground(textColor);
         portSpinner.setBorder(BorderFactory.createLineBorder(borderColor));
+        portSpinner.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-        JLabel portLabel = new JLabel("[PORT] Port:");
-        portLabel.setForeground(textColor);
-        portLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        
-        leftPanel.add(portLabel);
+        // Create local port label for toolbar
+        JLabel toolbarPortLabel = new JLabel("[PORT] Port:");
+        toolbarPortLabel.setForeground(textColor);
+        toolbarPortLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        leftPanel.add(toolbarPortLabel);
         leftPanel.add(portSpinner);
-        leftPanel.add(Box.createHorizontalStrut(10));
+        leftPanel.add(Box.createHorizontalStrut(15));
         leftPanel.add(startButton);
         leftPanel.add(stopButton);
-        leftPanel.add(clearLogButton);
-
-        // Right side - Status indicators
+        leftPanel.add(clearLogButton); // Right side - Status indicators
         ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0), backgroundColor, 0, false);
         rightPanel.setOpaque(false);
 
         statusLabel = new JLabel("[OFFLINE] Server Stopped");
         statusLabel.setForeground(textColor);
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
         rightPanel.add(statusLabel);
 
@@ -510,9 +510,9 @@ public class Server extends JFrame {
         toolbar.add(rightPanel, BorderLayout.EAST);
 
         // Add action listeners
-        startButton.addActionListener(e -> startServer());
-        stopButton.addActionListener(e -> stopServer());
-        clearLogButton.addActionListener(e -> {
+        startButton.addActionListener(_ -> startServer());
+        stopButton.addActionListener(_ -> stopServer());
+        clearLogButton.addActionListener(_ -> {
             logArea.setText("");
             if (dashboardActivityFeed != null) {
                 dashboardActivityFeed.setText("");
@@ -524,8 +524,8 @@ public class Server extends JFrame {
 
     private void createTabbedInterface() {
         mainTabs = new JTabbedPane(JTabbedPane.TOP);
-        mainTabs.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        
+        mainTabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
         // Apply dark theme to tabbed pane
         mainTabs.setBackground(backgroundColor);
         mainTabs.setForeground(textColor);
@@ -574,15 +574,15 @@ public class Server extends JFrame {
                 new LineBorder(new Color(200, 200, 200)),
                 "[LIVE] Live Activity Feed",
                 TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 14)));
+                new Font("Segoe UI", Font.BOLD, 16)));
         activityPanel.setBackground(backgroundColor);
 
         dashboardActivityFeed = new JTextArea(15, 40);
         dashboardActivityFeed.setEditable(false);
-        dashboardActivityFeed.setFont(getEmojiCompatibleFont(Font.PLAIN, 11));
+        dashboardActivityFeed.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
         dashboardActivityFeed.setBackground(cardColor);
         dashboardActivityFeed.setForeground(textColor);
-        dashboardActivityFeed.setBorder(new EmptyBorder(10, 10, 10, 10));
+        dashboardActivityFeed.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         JScrollPane activityScroll = new JScrollPane(dashboardActivityFeed);
         activityScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -601,16 +601,16 @@ public class Server extends JFrame {
                 new EmptyBorder(15, 15, 15, 15)));
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 12));
+        titleLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
         titleLabel.setForeground(textSecondary);
 
         JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 24));
+        valueLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 28));
         valueLabel.setForeground(color);
 
         // Add a small status indicator for real-time sync
         JLabel lastUpdated = new JLabel("Live");
-        lastUpdated.setFont(getEmojiCompatibleFont(Font.ITALIC, 10));
+        lastUpdated.setFont(getEmojiCompatibleFont(Font.ITALIC, 12));
         lastUpdated.setForeground(textSecondary);
 
         JPanel labelPanel = new JPanel(new BorderLayout());
@@ -676,8 +676,8 @@ public class Server extends JFrame {
         };
 
         clientTable = new JTable(clientTableModel);
-        clientTable.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        clientTable.setRowHeight(25);
+        clientTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        clientTable.setRowHeight(28);
         clientTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         JScrollPane clientScroll = new JScrollPane(clientTable);
@@ -700,7 +700,7 @@ public class Server extends JFrame {
         });
 
         // Kick selected user
-        banUserButton.addActionListener(e -> kickSelectedClient());
+        banUserButton.addActionListener(_ -> kickSelectedClient());
 
         return clientPanel;
     }
@@ -710,7 +710,7 @@ public class Server extends JFrame {
         broadcastPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         JLabel titleLabel = new JLabel("[BROADCAST] Send Message to All Clients");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         broadcastPanel.add(titleLabel, BorderLayout.NORTH);
 
         ModernPanel inputPanel = new ModernPanel(new BorderLayout(10, 10), Color.WHITE, 0, false);
@@ -737,7 +737,7 @@ public class Server extends JFrame {
         broadcastPanel.add(inputPanel, BorderLayout.CENTER);
 
         // Wire broadcast action
-        broadcastButton.addActionListener(e -> {
+        broadcastButton.addActionListener(_ -> {
             String msg = broadcastField.getText().trim();
             if (!msg.isEmpty()) {
                 broadcastMessage(msg, "server", "CHAT");
@@ -747,7 +747,7 @@ public class Server extends JFrame {
             }
         });
         // Enter to send
-        broadcastField.addActionListener(e -> broadcastButton.doClick());
+        broadcastField.addActionListener(_ -> broadcastButton.doClick());
 
         return broadcastPanel;
     }
@@ -758,7 +758,7 @@ public class Server extends JFrame {
         settingsPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         JLabel titleLabel = new JLabel("[SETTINGS] Server Settings");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         settingsPanel.add(titleLabel);
 
@@ -793,9 +793,9 @@ public class Server extends JFrame {
         portLabel.setForeground(textColor);
         uptimeLabel.setForeground(textColor);
         clientCountLabel.setForeground(textColor);
-        
+
         // Apply consistent font styling
-        Font statusFont = new Font("Segoe UI", Font.PLAIN, 11);
+        Font statusFont = new Font("Segoe UI", Font.PLAIN, 13);
         portLabel.setFont(statusFont);
         uptimeLabel.setFont(statusFont);
         clientCountLabel.setFont(statusFont);
@@ -824,7 +824,7 @@ public class Server extends JFrame {
     }
 
     private void startUIUpdateTimer() {
-        uiUpdateTimer = new javax.swing.Timer(1000, e -> updateUIStats());
+        uiUpdateTimer = new javax.swing.Timer(1000, _ -> updateUIStats());
         uiUpdateTimer.start();
     }
 

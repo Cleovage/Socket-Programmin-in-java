@@ -24,10 +24,10 @@ class ModernButton extends JButton {
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
-        setFont(new Font("Segoe UI", Font.BOLD, 12));
+        setFont(new Font("Segoe UI", Font.BOLD, 14));
         setForeground(Color.WHITE);
         setCursor(new Cursor(Cursor.HAND_CURSOR));
-        setBorder(new EmptyBorder(12, 24, 12, 24));
+        setBorder(new EmptyBorder(14, 28, 14, 28));
 
         animationTimer = new javax.swing.Timer(16, e -> {
             if (isHovering && animationProgress < 1.0f) {
@@ -111,11 +111,11 @@ class ModernTextField extends JTextField {
         this.focusColor = focusColor;
         this.borderColor = borderColor;
 
-        setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        setFont(new Font("Segoe UI", Font.PLAIN, 14));
         setBackground(new Color(48, 48, 48));
         setForeground(new Color(240, 240, 240));
         setCaretColor(focusColor);
-        setBorder(new EmptyBorder(8, 12, 8, 12));
+        setBorder(new EmptyBorder(10, 14, 10, 14));
 
         animationTimer = new javax.swing.Timer(16, e -> {
             if (isFocused && animationProgress < 1.0f) {
