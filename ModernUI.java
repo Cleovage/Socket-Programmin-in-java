@@ -2,10 +2,16 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.border.*;
+import javax.swing.plaf.basic.*;
 
+/**
+ * ModernUI.java - Custom modern UI components for the Socket Programming
+ * application
+ * Provides modern, animated UI components with dark theme support
+ */
 class ModernButton extends JButton {
-    private Color bgColor;
-    private Color hoverColor;
+    private final Color bgColor;
+    private final Color hoverColor;
     private javax.swing.Timer animationTimer;
     private float animationProgress = 0.0f;
     private boolean isHovering = false;
@@ -23,7 +29,7 @@ class ModernButton extends JButton {
         setCursor(new Cursor(Cursor.HAND_CURSOR));
         setBorder(new EmptyBorder(12, 24, 12, 24));
 
-        animationTimer = new javax.swing.Timer(16, e -> {
+        animationTimer = new javax.swing.Timer(16, _ -> {
             if (isHovering && animationProgress < 1.0f) {
                 animationProgress = Math.min(1.0f, animationProgress + 0.1f);
                 repaint();
@@ -94,8 +100,8 @@ class ModernButton extends JButton {
 }
 
 class ModernTextField extends JTextField {
-    private Color focusColor;
-    private Color borderColor;
+    private final Color focusColor;
+    private final Color borderColor;
     private boolean isFocused = false;
     private javax.swing.Timer animationTimer;
     private float animationProgress = 0.0f;
@@ -111,7 +117,7 @@ class ModernTextField extends JTextField {
         setCaretColor(focusColor);
         setBorder(new EmptyBorder(8, 12, 8, 12));
 
-        animationTimer = new javax.swing.Timer(16, e -> {
+        animationTimer = new javax.swing.Timer(16, _ -> {
             if (isFocused && animationProgress < 1.0f) {
                 animationProgress = Math.min(1.0f, animationProgress + 0.1f);
                 repaint();
@@ -160,9 +166,9 @@ class ModernTextField extends JTextField {
 }
 
 class ModernPanel extends JPanel {
-    private Color backgroundColor;
-    private int cornerRadius;
-    private boolean hasShadow;
+    private final Color backgroundColor;
+    private final int cornerRadius;
+    private final boolean hasShadow;
 
     public ModernPanel(LayoutManager layout, Color backgroundColor, int cornerRadius, boolean hasShadow) {
         super(layout);
@@ -193,7 +199,9 @@ class ModernPanel extends JPanel {
     }
 }
 
-class ModernScrollBarUI extends javax.swing.plaf.basic.BasicScrollBarUI {
+class ModernScrollBarUI extends BasicScrollBarUI {
+    // Note: Field hiding warnings are expected as we override parent class fields
+    @SuppressWarnings({ "FieldHidesField", "UnusedVariable" })
     @Override
     protected void configureScrollBarColors() {
         thumbColor = new Color(88, 86, 214, 100);

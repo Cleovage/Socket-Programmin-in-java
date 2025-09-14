@@ -2,12 +2,11 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.*;
+import java.time.format.*;
 import java.util.*;
 import java.util.concurrent.*;
 import javax.swing.*;
-import javax.swing.Timer;
 import javax.swing.border.*;
 import javax.swing.table.*;
 
@@ -65,7 +64,7 @@ public class Server extends JFrame {
 
         initializeGUI();
         startUIUpdateTimer();
-        
+
         // Initialize dashboard with correct starting values
         synchronizeDashboard();
     }
@@ -133,7 +132,7 @@ public class Server extends JFrame {
                     String startMsg = "[" + LocalDateTime.now().format(timeFormatter) + "] [>] Server started on port "
                             + selectedPort;
                     addActivity(startMsg);
-                    
+
                     // Synchronize dashboard after server start
                     synchronizeDashboard();
                 });
@@ -198,7 +197,7 @@ public class Server extends JFrame {
             stopButton.setEnabled(false);
             statusLabel.setText("[STOPPED] Server Stopped");
             addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] Server stopped");
-            
+
             // Synchronize dashboard after server stop
             synchronizeDashboard();
         });
@@ -552,7 +551,7 @@ public class Server extends JFrame {
         JLabel valueLabel = new JLabel(value);
         valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         valueLabel.setForeground(color);
-        
+
         // Add a small status indicator for real-time sync
         JLabel lastUpdated = new JLabel("Live");
         lastUpdated.setFont(new Font("Segoe UI", Font.ITALIC, 10));
@@ -763,7 +762,7 @@ public class Server extends JFrame {
 
     private void updateUIStats() {
         // Update status bar elements and dashboard synchronously
-        
+
         // Handle uptime for both running and stopped states
         String uptimeStr = "00:00:00";
         if (isRunning && serverStartTime > 0) {
@@ -776,7 +775,7 @@ public class Server extends JFrame {
         } else {
             uptimeLabel.setText("[UPTIME] Uptime: 00:00:00");
         }
-        
+
         // Update dashboard uptime (always synchronized)
         if (dashboardUptimeLabel != null) {
             dashboardUptimeLabel.setText(uptimeStr);
@@ -798,7 +797,7 @@ public class Server extends JFrame {
 
         memoryBar.setValue(memoryPercent);
         memoryBar.setString("[MEMORY] Memory: " + memoryPercent + "%");
-        
+
         // Dashboard shows memory in MB with percentage
         if (dashboardMemoryLabel != null) {
             dashboardMemoryLabel.setText(usedMemoryMB + " MB (" + memoryPercent + "%)");
@@ -815,7 +814,7 @@ public class Server extends JFrame {
             String portStatus = isRunning ? currentPort + " (Active)" : currentPort + " (Stopped)";
             dashboardPortLabel.setText(portStatus);
         }
-        
+
         // Update total messages count (ensure it's current)
         if (totalMessagesStatLabel != null) {
             int totalMessages = 0;
@@ -824,11 +823,11 @@ public class Server extends JFrame {
             }
             totalMessagesStatLabel.setText(String.valueOf(totalMessages));
         }
-        
+
         // Force repaint of dashboard elements to ensure visual updates
         refreshDashboardVisuals();
     }
-    
+
     // Method to refresh dashboard visual indicators and colors
     private void refreshDashboardVisuals() {
         // Update stat card colors based on server status
@@ -836,23 +835,24 @@ public class Server extends JFrame {
             Color clientColor = isRunning ? new Color(33, 150, 243) : new Color(158, 158, 158);
             dashboardClientCountLabel.setForeground(clientColor);
         }
-        
+
         if (dashboardUptimeLabel != null) {
             Color uptimeColor = isRunning ? new Color(156, 39, 176) : new Color(158, 158, 158);
             dashboardUptimeLabel.setForeground(uptimeColor);
         }
-        
+
         if (dashboardPortLabel != null) {
             Color portColor = isRunning ? new Color(76, 175, 80) : new Color(255, 152, 0);
             dashboardPortLabel.setForeground(portColor);
         }
     }
-    
-    // Enhanced method to ensure dashboard is fully synchronized when server starts/stops
+
+    // Enhanced method to ensure dashboard is fully synchronized when server
+    // starts/stops
     private void synchronizeDashboard() {
         SwingUtilities.invokeLater(() -> {
             updateUIStats();
-            
+
             // Ensure activity feed is synchronized
             if (dashboardActivityFeed != null && logArea != null) {
                 String logContent = logArea.getText();
@@ -877,7 +877,7 @@ public class Server extends JFrame {
             dashboardActivityFeed.append(message + "\n");
             // Auto-scroll activity feed
             dashboardActivityFeed.setCaretPosition(dashboardActivityFeed.getDocument().getLength());
-            
+
             // Keep activity feed to reasonable size (max 1000 lines)
             String text = dashboardActivityFeed.getText();
             String[] lines = text.split("\n");
@@ -914,7 +914,7 @@ public class Server extends JFrame {
 
     private void incrementMessageCount(String clientId) {
         clientMessageCounts.merge(clientId, 1, Integer::sum);
-        
+
         // Update dashboard total messages immediately
         if (totalMessagesStatLabel != null) {
             int totalMessages = 0;
@@ -923,7 +923,7 @@ public class Server extends JFrame {
             }
             totalMessagesStatLabel.setText(String.valueOf(totalMessages));
         }
-        
+
         // Update client table
         Integer row = clientRowIndex.get(clientId);
         if (row != null && row < clientTableModel.getRowCount()) {
