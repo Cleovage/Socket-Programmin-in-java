@@ -107,7 +107,7 @@ public class Server extends JFrame {
     }
 
     private void initializeGUI() {
-        setTitle("[SERVER] Advanced Chat Server Control Panel");
+        setTitle("🖥️ Advanced Chat Server - Control Panel");
         setUndecorated(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -170,9 +170,9 @@ public class Server extends JFrame {
                     startButton.setEnabled(false);
                     stopButton.setEnabled(true);
                     broadcastButton.setEnabled(true);
-                    statusLabel.setText("[>] Server Running on port " + selectedPort);
+                    statusLabel.setText("🟢 Running on port " + selectedPort);
                     statusLabel.setForeground(new Color(76, 175, 80));
-                    portLabel.setText("[PORT] Port: " + selectedPort);
+                    portLabel.setText("🔌 Port: " + selectedPort);
 
                     String startMsg = "[" + LocalDateTime.now().format(timeFormatter) + "] [>] Server started on port "
                             + selectedPort;
@@ -243,7 +243,7 @@ public class Server extends JFrame {
             startButton.setEnabled(true);
             stopButton.setEnabled(false);
             broadcastButton.setEnabled(false);
-            statusLabel.setText("[STOPPED] Server Stopped");
+            statusLabel.setText("⚫ Stopped");
             statusLabel.setForeground(textColor);
             addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] Server stopped");
 
@@ -504,9 +504,12 @@ public class Server extends JFrame {
         ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 15, 5), backgroundColor, 0, false);
         leftPanel.setOpaque(false);
 
-        startButton = new ModernButton("[>] Start Server", successColor);
-        stopButton = new ModernButton("[STOP] Stop Server", accentColor);
-        clearLogButton = new ModernButton("[CLEAR] Clear Log", new Color(158, 158, 158));
+        startButton = new ModernButton("▶ Start", successColor);
+        startButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        stopButton = new ModernButton("⏹ Stop", accentColor);
+        stopButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        clearLogButton = new ModernButton("🗑 Clear", new Color(158, 158, 158));
+        clearLogButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
 
         stopButton.setEnabled(false);
 
@@ -521,8 +524,9 @@ public class Server extends JFrame {
         portSpinner.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         // Create local port label for toolbar
-        JLabel toolbarPortLabel = new JLabel("[PORT] Port:");
+        JLabel toolbarPortLabel = new JLabel("🔌 Port:");
         toolbarPortLabel.setForeground(textColor);
+        toolbarPortLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
         toolbarPortLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
         leftPanel.add(toolbarPortLabel);
@@ -534,7 +538,7 @@ public class Server extends JFrame {
         ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0), backgroundColor, 0, false);
         rightPanel.setOpaque(false);
 
-        statusLabel = new JLabel("[OFFLINE] Server Stopped");
+        statusLabel = new JLabel("⚫ Offline");
         statusLabel.setForeground(textColor);
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
@@ -566,19 +570,19 @@ public class Server extends JFrame {
         mainTabs.setBorder(BorderFactory.createEmptyBorder());
 
         // Dashboard Tab
-        mainTabs.addTab("[DASHBOARD] Dashboard", createDashboardTab());
+        mainTabs.addTab("📊 Dashboard", createDashboardTab());
 
         // Server Log Tab
-        mainTabs.addTab("[LOG] Server Log", createLogTab());
+        mainTabs.addTab("📝 Logs", createLogTab());
 
         // Client Management Tab
-        mainTabs.addTab("[CLIENTS] Clients", createClientTab());
+        mainTabs.addTab("👥 Clients", createClientTab());
 
         // Broadcast Tab
-        mainTabs.addTab("[BROADCAST] Broadcast", createBroadcastTab());
+        mainTabs.addTab("📢 Broadcast", createBroadcastTab());
 
         // Settings Tab
-        mainTabs.addTab("[SETTINGS] Settings", createSettingsTab());
+        mainTabs.addTab("⚙️ Settings", createSettingsTab());
 
         add(mainTabs, BorderLayout.CENTER);
     }
@@ -593,12 +597,12 @@ public class Server extends JFrame {
         statsPanel.setBackground(backgroundColor);
 
         // Create stat cards with references stored for updates using new color scheme
-        statsPanel.add(createStatCard("[CLIENTS] Connected Clients", "0", primaryColor, "clients"));
-        statsPanel.add(createStatCard("[MESSAGES] Total Messages", "0", successColor, "messages"));
-        statsPanel.add(createStatCard("[UPTIME] Server Uptime", "00:00:00", accentColor, "uptime"));
-        statsPanel.add(createStatCard("[PORT] Port Status", String.valueOf(PORT), new Color(255, 152, 0), "port"));
-        statsPanel.add(createStatCard("[MEMORY] Memory Usage", "0 MB", new Color(244, 67, 54), "memory"));
-        statsPanel.add(createStatCard("[CONNECTIONS] Total Connections", "0", new Color(0, 150, 136), "connections"));
+        statsPanel.add(createStatCard("👥 Connected", "0", primaryColor, "clients"));
+        statsPanel.add(createStatCard("💬 Messages", "0", successColor, "messages"));
+        statsPanel.add(createStatCard("⏱️ Uptime", "00:00:00", accentColor, "uptime"));
+        statsPanel.add(createStatCard("🔌 Port", String.valueOf(PORT), new Color(255, 152, 0), "port"));
+        statsPanel.add(createStatCard("💾 Memory", "0 MB", new Color(244, 67, 54), "memory"));
+        statsPanel.add(createStatCard("🔗 Total Connections", "0", new Color(0, 150, 136), "connections"));
 
         dashboard.add(statsPanel, BorderLayout.NORTH);
 
@@ -606,7 +610,7 @@ public class Server extends JFrame {
         ModernPanel activityPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 8, true);
         activityPanel.setBorder(BorderFactory.createTitledBorder(
                 new LineBorder(new Color(200, 200, 200)),
-                "[LIVE] Live Activity Feed",
+                "🔴 Live Activity",
                 TitledBorder.LEFT, TitledBorder.TOP,
                 new Font("Segoe UI", Font.BOLD, 16)));
         activityPanel.setBackground(backgroundColor);
@@ -725,7 +729,8 @@ public class Server extends JFrame {
 
         // Client actions
         ModernPanel actionPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT), Color.WHITE, 0, false);
-        banUserButton = new ModernButton("[KICK] Kick User", new Color(244, 67, 54));
+        banUserButton = new ModernButton("🚫 Kick", new Color(244, 67, 54));
+        banUserButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         banUserButton.setEnabled(false);
         actionPanel.add(banUserButton);
 
@@ -750,8 +755,8 @@ public class Server extends JFrame {
         ModernPanel broadcastPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 0, false);
         broadcastPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JLabel titleLabel = new JLabel("[BROADCAST] Send Message to All Clients");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        JLabel titleLabel = new JLabel("📢 Broadcast Message");
+        titleLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 18));
         broadcastPanel.add(titleLabel, BorderLayout.NORTH);
 
         ModernPanel inputPanel = new ModernPanel(new BorderLayout(10, 10), Color.WHITE, 0, false);
@@ -766,8 +771,8 @@ public class Server extends JFrame {
                 new LineBorder(borderColor),
                 new EmptyBorder(10, 10, 10, 10)));
 
-        broadcastButton = new ModernButton("[SEND] Send Broadcast", primaryColor);
-        broadcastButton.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
+        broadcastButton = new ModernButton("📤 Send", primaryColor);
+        broadcastButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         broadcastButton.setForeground(Color.WHITE);
         broadcastButton.setBorder(new EmptyBorder(10, 20, 10, 20));
         broadcastButton.setEnabled(false);
@@ -798,8 +803,8 @@ public class Server extends JFrame {
         settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
         settingsPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JLabel titleLabel = new JLabel("[SETTINGS] Server Settings");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        JLabel titleLabel = new JLabel("⚙️ Configuration");
+        titleLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 18));
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         settingsPanel.add(titleLabel);
 
@@ -827,16 +832,16 @@ public class Server extends JFrame {
         JPanel leftStatus = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         leftStatus.setOpaque(false);
 
-        portLabel = new JLabel("[PORT] Port: " + PORT);
-        uptimeLabel = new JLabel("[UPTIME] Uptime: 00:00:00");
-        clientCountLabel = new JLabel("[CLIENTS] Clients: 0");
+        portLabel = new JLabel("🔌 " + PORT);
+        uptimeLabel = new JLabel("⏱️ 00:00:00");
+        clientCountLabel = new JLabel("👥 0");
 
         portLabel.setForeground(textColor);
         uptimeLabel.setForeground(textColor);
         clientCountLabel.setForeground(textColor);
 
-        // Apply consistent font styling
-        Font statusFont = new Font("Segoe UI", Font.PLAIN, 13);
+        // Apply consistent font styling with emoji support
+        Font statusFont = getEmojiCompatibleFont(Font.PLAIN, 13);
         portLabel.setFont(statusFont);
         uptimeLabel.setFont(statusFont);
         clientCountLabel.setFont(statusFont);
@@ -880,9 +885,9 @@ public class Server extends JFrame {
             long minutes = (uptime / (1000 * 60)) % 60;
             long seconds = (uptime / 1000) % 60;
             uptimeStr = String.format("%02d:%02d:%02d", hours, minutes, seconds);
-            uptimeLabel.setText(String.format("[UPTIME] Uptime: %s", uptimeStr));
+            uptimeLabel.setText("⏱️ " + uptimeStr);
         } else {
-            uptimeLabel.setText("[UPTIME] Uptime: 00:00:00");
+            uptimeLabel.setText("⏱️ 00:00:00");
         }
 
         // Update dashboard uptime (always synchronized)
@@ -892,7 +897,7 @@ public class Server extends JFrame {
 
         // Update client count for both status bar and dashboard
         int clientCount = connectedClients.size();
-        clientCountLabel.setText("[CLIENTS] Clients: " + clientCount);
+        clientCountLabel.setText("👥 " + clientCount);
         if (dashboardClientCountLabel != null) {
             dashboardClientCountLabel.setText(String.valueOf(clientCount));
         }
@@ -905,7 +910,7 @@ public class Server extends JFrame {
         long usedMemoryMB = usedMemory / (1024 * 1024);
 
         memoryBar.setValue(memoryPercent);
-        memoryBar.setString("[MEMORY] Memory: " + memoryPercent + "%");
+        memoryBar.setString("💾 " + memoryPercent + "%");
 
         // Dashboard shows memory in MB with percentage
         if (dashboardMemoryLabel != null) {
@@ -1041,7 +1046,7 @@ public class Server extends JFrame {
     }
 
     private void updateClientCountLabel() {
-        clientCountLabel.setText("[CLIENTS] Clients: " + connectedClients.size());
+        clientCountLabel.setText("👥 " + connectedClients.size());
     }
 
     private void kickSelectedClient() {

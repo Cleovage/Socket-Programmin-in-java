@@ -9,6 +9,29 @@ import javax.swing.plaf.basic.*;
  * ModernUI.java - Custom modern UI components for the Socket Programming
  * application Provides modern, animated UI components with dark theme support
  */
+// Helper method for emoji-compatible font
+class FontHelper {
+
+    public static Font getEmojiCompatibleFont(int style, int size) {
+        String[] emojiSupportingFonts = {
+            "Segoe UI Emoji", // Windows
+            "Apple Color Emoji", // macOS
+            "Noto Color Emoji", // Linux
+            "Segoe UI", // Fallback
+            "Arial Unicode MS", // Fallback
+            "SansSerif" // Last resort
+        };
+
+        for (String fontName : emojiSupportingFonts) {
+            Font font = new Font(fontName, style, size);
+            if (font.getFamily().equals(fontName)) {
+                return font;
+            }
+        }
+        return new Font("SansSerif", style, size);
+    }
+}
+
 class ModernButton extends JButton {
 
     private final Color bgColor;
@@ -16,6 +39,7 @@ class ModernButton extends JButton {
     private javax.swing.Timer animationTimer;
     private float animationProgress = 0.0f;
     private boolean isHovering = false;
+    private float shadowIntensity = 0.0f;
 
     public ModernButton(String text, Color bgColor) {
         super(text);
@@ -25,18 +49,20 @@ class ModernButton extends JButton {
         setContentAreaFilled(false);
         setBorderPainted(false);
         setFocusPainted(false);
-        setFont(new Font("Segoe UI", Font.BOLD, 14));
+        setFont(FontHelper.getEmojiCompatibleFont(Font.BOLD, 13));
         setForeground(Color.WHITE);
         setCursor(new Cursor(Cursor.HAND_CURSOR));
-        setBorder(new EmptyBorder(14, 28, 14, 28));
+        setBorder(new EmptyBorder(12, 24, 12, 24));
 
         animationTimer = new javax.swing.Timer(16, e -> {
             boolean changed = false;
             if (isHovering && animationProgress < 1.0f) {
-                animationProgress = Math.min(1.0f, animationProgress + 0.1f);
+                animationProgress = Math.min(1.0f, animationProgress + 0.15f);
+                shadowIntensity = Math.min(1.0f, shadowIntensity + 0.15f);
                 changed = true;
             } else if (!isHovering && animationProgress > 0.0f) {
-                animationProgress = Math.max(0.0f, animationProgress - 0.1f);
+                animationProgress = Math.max(0.0f, animationProgress - 0.15f);
+                shadowIntensity = Math.max(0.0f, shadowIntensity - 0.15f);
                 changed = true;
             }
 
@@ -78,19 +104,28 @@ class ModernButton extends JButton {
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-        // Interpolate colors
+        // Draw enhanced shadow when hovering
+        if (shadowIntensity > 0) {
+            g2d.setColor(new Color(0, 0, 0, (int) (shadowIntensity * 50)));
+            g2d.fillRoundRect(3, 4, getWidth() - 6, getHeight() - 6, 10, 10);
+        }
+
+        // Interpolate colors with smooth transition
         Color currentColor = interpolateColor(bgColor, hoverColor, animationProgress);
         g2d.setColor(currentColor);
 
-        // Draw rounded rectangle with shadow
-        g2d.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 8, 8);
+        // Draw main button with rounded corners
+        g2d.fillRoundRect(0, 0, getWidth() - (int) (shadowIntensity * 2),
+                getHeight() - (int) (shadowIntensity * 2), 10, 10);
 
-        // Add subtle glow effect when hovering
+        // Add subtle inner glow when hovering
         if (animationProgress > 0) {
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, animationProgress * 0.3f));
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, animationProgress * 0.2f));
             g2d.setColor(Color.WHITE);
-            g2d.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+            g2d.fillRoundRect(2, 2, getWidth() - (int) (shadowIntensity * 2) - 4,
+                    getHeight() - (int) (shadowIntensity * 2) - 4, 8, 8);
         }
 
         g2d.dispose();
@@ -114,25 +149,28 @@ class ModernTextField extends JTextField {
     private boolean isFocused = false;
     private javax.swing.Timer animationTimer;
     private float animationProgress = 0.0f;
+    private float glowIntensity = 0.0f;
 
     public ModernTextField(String text, int columns, Color focusColor, Color borderColor) {
         super(text, columns);
         this.focusColor = focusColor;
         this.borderColor = borderColor;
 
-        setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        setFont(FontHelper.getEmojiCompatibleFont(Font.PLAIN, 14));
         setBackground(new Color(48, 48, 48));
         setForeground(new Color(240, 240, 240));
         setCaretColor(focusColor);
-        setBorder(new EmptyBorder(10, 14, 10, 14));
+        setBorder(new EmptyBorder(12, 16, 12, 16));
 
         animationTimer = new javax.swing.Timer(16, e -> {
             boolean changed = false;
             if (isFocused && animationProgress < 1.0f) {
-                animationProgress = Math.min(1.0f, animationProgress + 0.1f);
+                animationProgress = Math.min(1.0f, animationProgress + 0.12f);
+                glowIntensity = Math.min(1.0f, glowIntensity + 0.12f);
                 changed = true;
             } else if (!isFocused && animationProgress > 0.0f) {
-                animationProgress = Math.max(0.0f, animationProgress - 0.1f);
+                animationProgress = Math.max(0.0f, animationProgress - 0.12f);
+                glowIntensity = Math.max(0.0f, glowIntensity - 0.12f);
                 changed = true;
             }
 
@@ -162,11 +200,21 @@ class ModernTextField extends JTextField {
     protected void paintBorder(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
+        // Draw subtle outer glow when focused
+        if (glowIntensity > 0) {
+            g2d.setColor(new Color(focusColor.getRed(), focusColor.getGreen(),
+                    focusColor.getBlue(), (int) (glowIntensity * 40)));
+            g2d.setStroke(new BasicStroke(3 + glowIntensity * 2));
+            g2d.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+        }
+
+        // Draw main border with smooth color transition
         Color currentColor = interpolateColor(borderColor, focusColor, animationProgress);
         g2d.setColor(currentColor);
-        g2d.setStroke(new BasicStroke(1 + animationProgress * 2));
-        g2d.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, 6, 6);
+        g2d.setStroke(new BasicStroke(2 + animationProgress));
+        g2d.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 7, 7);
 
         g2d.dispose();
     }

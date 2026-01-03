@@ -123,28 +123,35 @@ public class AdvancedClient extends JFrame {
         // Server field
         gbc.gridx = 0;
         gbc.gridy = 0;
-        leftPanel.add(createGlowLabel("[SERVER] Server:", TEXT_COLOR), gbc);
+        JLabel serverLabel = createGlowLabel("🖥️ Server:", TEXT_COLOR);
+        serverLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
+        leftPanel.add(serverLabel, gbc);
         gbc.gridx = 1;
         leftPanel.add(serverField, gbc);
 
         // Port field
         gbc.gridx = 2;
         gbc.gridy = 0;
-        leftPanel.add(createGlowLabel("[PORT] Port:", TEXT_COLOR), gbc);
+        JLabel portLabelConn = createGlowLabel("🔌 Port:", TEXT_COLOR);
+        portLabelConn.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
+        leftPanel.add(portLabelConn, gbc);
         gbc.gridx = 3;
         leftPanel.add(portField, gbc);
 
         // Username field
         gbc.gridx = 4;
         gbc.gridy = 0;
-        leftPanel.add(createGlowLabel("[USER] Username:", TEXT_COLOR), gbc);
+        JLabel usernameLabel = createGlowLabel("👤 Username:", TEXT_COLOR);
+        usernameLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
+        leftPanel.add(usernameLabel, gbc);
         gbc.gridx = 5;
         leftPanel.add(usernameField, gbc);
 
         // Connect button
         gbc.gridx = 6;
         gbc.gridy = 0;
-        connectButton = new ModernButton("[CONNECT] Connect", SUCCESS_COLOR);
+        connectButton = new ModernButton("🔗 Connect", SUCCESS_COLOR);
+        connectButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         connectButton.addActionListener(e -> toggleConnection());
         leftPanel.add(connectButton, gbc);
 
@@ -152,13 +159,13 @@ public class AdvancedClient extends JFrame {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 25, 5));
         rightPanel.setOpaque(false);
 
-        statusLabel = new JLabel("[OFFLINE] Disconnected");
+        statusLabel = new JLabel("⚫ Offline");
         statusLabel.setForeground(TEXT_COLOR);
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        statusLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 16));
 
-        userCountLabel = new JLabel("[USERS] 0 online");
+        userCountLabel = new JLabel("👥 0 online");
         userCountLabel.setForeground(TEXT_SECONDARY);
-        userCountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userCountLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
 
         rightPanel.add(userCountLabel);
         rightPanel.add(statusLabel);
@@ -185,7 +192,7 @@ public class AdvancedClient extends JFrame {
 
         // Modern scroll pane with custom styling
         JScrollPane chatScroll = new JScrollPane(chatArea);
-        chatScroll.setBorder(BorderFactory.createTitledBorder("[CHAT] Chat Messages"));
+        chatScroll.setBorder(BorderFactory.createTitledBorder("💬 Messages"));
         chatScroll.setBackground(CARD_COLOR);
         chatScroll.getViewport().setBackground(CARD_COLOR);
         chatScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -206,7 +213,7 @@ public class AdvancedClient extends JFrame {
         // userList.setCellRenderer(new DefaultListCellRenderer());
 
         userScroll = new JScrollPane(userList);
-        userScroll.setBorder(BorderFactory.createTitledBorder("[USERS] Online Users (0)"));
+        userScroll.setBorder(BorderFactory.createTitledBorder("👥 Online (0)"));
         userScroll.setPreferredSize(new Dimension(250, 0));
         userScroll.setBackground(CARD_COLOR);
         userScroll.getViewport().setBackground(CARD_COLOR);
@@ -245,12 +252,14 @@ public class AdvancedClient extends JFrame {
         messageField.setBorder(new EmptyBorder(12, 15, 12, 15));
 
         // Modern send button with glow effect
-        sendButton = new ModernButton("[SEND] Send", PRIMARY_COLOR);
+        sendButton = new ModernButton("📤 Send", PRIMARY_COLOR);
+        sendButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         sendButton.setEnabled(false);
         sendButton.addActionListener(e -> sendMessage());
 
         // Emoji button for future enhancement
-        emojiButton = new ModernButton("[EMOJI] :)", ACCENT_COLOR);
+        emojiButton = new ModernButton("😊 Emoji", ACCENT_COLOR);
+        emojiButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         emojiButton.setEnabled(false);
         emojiButton.addActionListener(e -> showEmojiPanel());
 
@@ -490,7 +499,7 @@ public class AdvancedClient extends JFrame {
         try {
             // Animate connection process
             connectButton.setEnabled(false);
-            statusLabel.setText("[CONNECTING] Connecting...");
+            statusLabel.setText("🔄 Connecting...");
             // statusLabel.startPulse();
 
             serverAddress = serverField.getText().trim();
@@ -509,10 +518,10 @@ public class AdvancedClient extends JFrame {
             output.println("USERNAME|" + username);
 
             SwingUtilities.invokeLater(() -> {
-                statusLabel.setText("[CONNECTED] Connected as " + username);
+                statusLabel.setText("🟢 Connected as " + username);
                 // statusLabel.stopPulse();
-                setTitle("[CLIENT] Elite Chat Client - " + username);
-                appendToChat("[WELCOME] Connected to server as " + username + "\n", "system");
+                setTitle("💬 Elite Chat Client - " + username);
+                appendToChat("✨ Welcome! Connected as " + username + "\n", "system");
                 updateConnectionStatus();
 
                 // Celebration animation
@@ -524,17 +533,17 @@ public class AdvancedClient extends JFrame {
                         ((Timer) e.getSource()).stop();
                     }
                     statusLabel.setText(
-                            count[0] % 2 == 0 ? "[CONNECTED] Connected! ***" : "[CONNECTED] Connected as " + username);
+                            count[0] % 2 == 0 ? "🟢 Connected! ✨" : "🟢 Connected as " + username);
                 });
                 celebrationTimer.start();
             });
 
         } catch (IOException e) {
             SwingUtilities.invokeLater(() -> {
-                statusLabel.setText("[ERROR] Connection failed");
+                statusLabel.setText("🔴 Connection failed");
                 // statusLabel.stopPulse();
                 connectButton.setEnabled(true);
-                connectButton.setText("[CONNECT] Connect");
+                connectButton.setText("🔗 Connect");
 
                 // Modern error dialog
                 JOptionPane.showMessageDialog(this,
@@ -544,10 +553,10 @@ public class AdvancedClient extends JFrame {
             });
         } catch (NumberFormatException e) {
             SwingUtilities.invokeLater(() -> {
-                statusLabel.setText("[ERROR] Invalid port");
+                statusLabel.setText("🔴 Invalid port");
                 // statusLabel.stopPulse();
                 connectButton.setEnabled(true);
-                connectButton.setText("[CONNECT] Connect");
+                connectButton.setText("🔗 Connect");
 
                 JOptionPane.showMessageDialog(this,
                         "Please enter a valid port number",
@@ -579,15 +588,15 @@ public class AdvancedClient extends JFrame {
         }
 
         SwingUtilities.invokeLater(() -> {
-            statusLabel.setText("[OFFLINE] Disconnected");
+            statusLabel.setText("⚫ Offline");
             // statusLabel.stopPulse();
-            appendToChat("[BYE] You left the chat\n", "system");
+            appendToChat("👋 You left the chat\n", "system");
             userListModel.clear();
-            userCountLabel.setText("[USERS] 0 online");
+            userCountLabel.setText("👥 0 online");
             updateConnectionStatus();
 
             // Reset title
-            setTitle("[CLIENT] Elite Chat Client");
+            setTitle("💬 Elite Chat Client");
         });
     }
 
@@ -595,7 +604,7 @@ public class AdvancedClient extends JFrame {
         boolean connected = isConnected;
         // Allow disconnect via the same button
         connectButton.setEnabled(true);
-        connectButton.setText(connected ? "[DISCONNECT] Disconnect" : "[CONNECT] Connect");
+        connectButton.setText(connected ? "🔌 Disconnect" : "🔗 Connect");
         sendButton.setEnabled(connected);
         emojiButton.setEnabled(connected);
         messageField.setEnabled(connected);
@@ -744,11 +753,11 @@ public class AdvancedClient extends JFrame {
         }
 
         // Update user count
-        userCountLabel.setText("[USERS] " + userListModel.size() + " online");
+        userCountLabel.setText("👥 " + userListModel.size() + " online");
 
         // Update the user list title with count
         if (userScroll != null && userScroll.getBorder() instanceof TitledBorder border) {
-            border.setTitle("[USERS] Online Users (" + userListModel.size() + ")");
+            border.setTitle("👥 Online (" + userListModel.size() + ")");
             userScroll.repaint();
         }
     }
