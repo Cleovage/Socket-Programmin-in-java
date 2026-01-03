@@ -1,3 +1,4 @@
+
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -6,10 +7,10 @@ import javax.swing.plaf.basic.*;
 
 /**
  * ModernUI.java - Custom modern UI components for the Socket Programming
- * application
- * Provides modern, animated UI components with dark theme support
+ * application Provides modern, animated UI components with dark theme support
  */
 class ModernButton extends JButton {
+
     private final Color bgColor;
     private final Color hoverColor;
     private javax.swing.Timer animationTimer;
@@ -30,12 +31,19 @@ class ModernButton extends JButton {
         setBorder(new EmptyBorder(14, 28, 14, 28));
 
         animationTimer = new javax.swing.Timer(16, e -> {
+            boolean changed = false;
             if (isHovering && animationProgress < 1.0f) {
                 animationProgress = Math.min(1.0f, animationProgress + 0.1f);
-                repaint();
+                changed = true;
             } else if (!isHovering && animationProgress > 0.0f) {
                 animationProgress = Math.max(0.0f, animationProgress - 0.1f);
+                changed = true;
+            }
+
+            if (changed) {
                 repaint();
+            } else {
+                ((javax.swing.Timer) e.getSource()).stop();
             }
         });
 
@@ -100,6 +108,7 @@ class ModernButton extends JButton {
 }
 
 class ModernTextField extends JTextField {
+
     private final Color focusColor;
     private final Color borderColor;
     private boolean isFocused = false;
@@ -118,12 +127,19 @@ class ModernTextField extends JTextField {
         setBorder(new EmptyBorder(10, 14, 10, 14));
 
         animationTimer = new javax.swing.Timer(16, e -> {
+            boolean changed = false;
             if (isFocused && animationProgress < 1.0f) {
                 animationProgress = Math.min(1.0f, animationProgress + 0.1f);
-                repaint();
+                changed = true;
             } else if (!isFocused && animationProgress > 0.0f) {
                 animationProgress = Math.max(0.0f, animationProgress - 0.1f);
+                changed = true;
+            }
+
+            if (changed) {
                 repaint();
+            } else {
+                ((javax.swing.Timer) e.getSource()).stop();
             }
         });
 
@@ -166,6 +182,7 @@ class ModernTextField extends JTextField {
 }
 
 class ModernPanel extends JPanel {
+
     private final Color backgroundColor;
     private final int cornerRadius;
     private final boolean hasShadow;
@@ -200,8 +217,9 @@ class ModernPanel extends JPanel {
 }
 
 class ModernScrollBarUI extends BasicScrollBarUI {
+
     // Note: Field hiding warnings are expected as we override parent class fields
-    @SuppressWarnings({ "FieldHidesField", "UnusedVariable" })
+    @SuppressWarnings({"FieldHidesField", "UnusedVariable"})
     @Override
     protected void configureScrollBarColors() {
         thumbColor = new Color(88, 86, 214, 100);

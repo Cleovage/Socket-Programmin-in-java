@@ -1,16 +1,19 @@
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.text.*;
 
 public class AdvancedClient extends JFrame {
+
     private Socket socket;
     private BufferedReader input;
     private PrintWriter output;
-    private boolean isConnected = false;
+    private volatile boolean isConnected = false;
 
     // Modern UI Components
     private JTextPane chatArea;
@@ -18,6 +21,7 @@ public class AdvancedClient extends JFrame {
     private ModernButton connectButton, sendButton, emojiButton;
     private JList<String> userList;
     private DefaultListModel<String> userListModel;
+    private JScrollPane userScroll;
     private ModernPanel connectionPanel, chatPanel, inputPanel;
     private JLabel statusLabel, userCountLabel;
     private JLabel typingLabel;
@@ -47,12 +51,12 @@ public class AdvancedClient extends JFrame {
     private Font getEmojiCompatibleFont(int style, int size) {
         // Try different fonts that support emojis
         String[] emojiSupportingFonts = {
-                "Segoe UI Emoji", // Windows
-                "Apple Color Emoji", // macOS
-                "Noto Color Emoji", // Linux
-                "Segoe UI", // Fallback
-                "Arial Unicode MS", // Fallback
-                "SansSerif" // Last resort
+            "Segoe UI Emoji", // Windows
+            "Apple Color Emoji", // macOS
+            "Noto Color Emoji", // Linux
+            "Segoe UI", // Fallback
+            "Arial Unicode MS", // Fallback
+            "SansSerif" // Last resort
         };
 
         for (String fontName : emojiSupportingFonts) {
@@ -141,7 +145,7 @@ public class AdvancedClient extends JFrame {
         gbc.gridx = 6;
         gbc.gridy = 0;
         connectButton = new ModernButton("[CONNECT] Connect", SUCCESS_COLOR);
-        connectButton.addActionListener(_ -> connectToServer());
+        connectButton.addActionListener(e -> toggleConnection());
         leftPanel.add(connectButton, gbc);
 
         // Right side - Status with improved alignment
@@ -201,7 +205,7 @@ public class AdvancedClient extends JFrame {
         userList.setBorder(new EmptyBorder(20, 20, 20, 20));
         // userList.setCellRenderer(new DefaultListCellRenderer());
 
-        JScrollPane userScroll = new JScrollPane(userList);
+        userScroll = new JScrollPane(userList);
         userScroll.setBorder(BorderFactory.createTitledBorder("[USERS] Online Users (0)"));
         userScroll.setPreferredSize(new Dimension(250, 0));
         userScroll.setBackground(CARD_COLOR);
@@ -243,15 +247,15 @@ public class AdvancedClient extends JFrame {
         // Modern send button with glow effect
         sendButton = new ModernButton("[SEND] Send", PRIMARY_COLOR);
         sendButton.setEnabled(false);
-        sendButton.addActionListener(_ -> sendMessage());
+        sendButton.addActionListener(e -> sendMessage());
 
         // Emoji button for future enhancement
         emojiButton = new ModernButton("[EMOJI] :)", ACCENT_COLOR);
         emojiButton.setEnabled(false);
-        emojiButton.addActionListener(_ -> showEmojiPanel());
+        emojiButton.addActionListener(e -> showEmojiPanel());
 
         // Enter key to send message
-        messageField.addActionListener(_ -> sendMessage());
+        messageField.addActionListener(e -> sendMessage());
 
         // Advanced typing indicator with animation
         setupAdvancedTypingIndicator();
@@ -290,7 +294,8 @@ public class AdvancedClient extends JFrame {
     // Advanced typing indicator setup
     private void setupAdvancedTypingIndicator() {
         messageField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            private final javax.swing.Timer typingTimer = new javax.swing.Timer(2000, _ -> sendTyping(false));
+            private final javax.swing.Timer typingTimer = new javax.swing.Timer(2000, e -> sendTyping(false));
+
             {
                 typingTimer.setRepeats(false);
             }
@@ -378,7 +383,7 @@ public class AdvancedClient extends JFrame {
     // Animation for user selection
     private void animateSelection() {
         Timer selectionTimer = new Timer(100, null);
-        final int[] pulse = { 0 };
+        final int[] pulse = {0};
 
         selectionTimer.addActionListener(e -> {
             pulse[0]++;
@@ -393,9 +398,9 @@ public class AdvancedClient extends JFrame {
     // Show emoji panel with Unicode emojis
     private void showEmojiPanel() {
         String[] emojis = {
-                "😀", "😂", "😍", "😊", "😎", "😢", "😡", "😭",
-                "👍", "👎", "❤️", "💯", "🔥", "✨", "🎉", "👌",
-                "🤔", "😴", "🙄", "😘", "🥰", "😋", "😜", "🤗"
+            "😀", "😂", "😍", "😊", "😎", "😢", "😡", "😭",
+            "👍", "👎", "❤️", "💯", "🔥", "✨", "🎉", "👌",
+            "🤔", "😴", "🙄", "😘", "🥰", "😋", "😜", "🤗"
         };
         String selected = (String) JOptionPane.showInputDialog(
                 this,
@@ -435,40 +440,33 @@ public class AdvancedClient extends JFrame {
     }
 
     private void setupNetworking() {
-        // Start message reader thread
+        // Start message reader thread (survives disconnect/reconnect)
         Thread messageReader = new Thread(() -> {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    synchronized (this) {
-                        while (!isConnected && input == null) {
-                            wait(100); // Wait for connection
-                        }
+                    if (!isConnected || input == null) {
+                        Thread.sleep(100);
+                        continue;
                     }
 
-                    if (isConnected && input != null) {
-                        String message = input.readLine();
-                        if (message != null) {
-                            handleIncomingMessage(message);
-                        } else {
-                            // Connection lost
-                            SwingUtilities.invokeLater(() -> {
-                                appendToChat("Connection lost to server\n", "system");
-                                disconnectFromServer();
-                            });
-                            break;
-                        }
+                    String message;
+                    while (isConnected && input != null && (message = input.readLine()) != null) {
+                        handleIncomingMessage(message);
+                    }
+
+                    // Connection dropped (readLine returned null)
+                    if (isConnected) {
+                        SwingUtilities.invokeLater(() -> appendToChat("Connection lost to server\n", "system"));
+                        disconnectFromServer();
                     }
                 } catch (IOException e) {
                     if (isConnected) {
-                        SwingUtilities.invokeLater(() -> {
-                            appendToChat("Error reading from server: " + e.getMessage() + "\n", "system");
-                            disconnectFromServer();
-                        });
+                        SwingUtilities.invokeLater(() -> appendToChat(
+                                "Error reading from server: " + e.getMessage() + "\n", "system"));
+                        disconnectFromServer();
                     }
-                    break;
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    break;
                 }
             }
         });
@@ -476,9 +474,18 @@ public class AdvancedClient extends JFrame {
         messageReader.start();
     }
 
+    private void toggleConnection() {
+        if (isConnected) {
+            disconnectFromServer();
+        } else {
+            connectToServer();
+        }
+    }
+
     private void connectToServer() {
-        if (isConnected)
+        if (isConnected) {
             return;
+        }
 
         try {
             // Animate connection process
@@ -486,13 +493,16 @@ public class AdvancedClient extends JFrame {
             statusLabel.setText("[CONNECTING] Connecting...");
             // statusLabel.startPulse();
 
-            serverAddress = serverField.getText();
+            serverAddress = serverField.getText().trim();
             serverPort = Integer.parseInt(portField.getText());
-            username = usernameField.getText();
+            username = usernameField.getText().trim();
+            if (username.isEmpty()) {
+                username = "Anonymous";
+            }
 
             socket = new Socket(serverAddress, serverPort);
-            input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            output = new PrintWriter(socket.getOutputStream(), true);
+            input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            output = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
             isConnected = true;
 
             // Send username first
@@ -507,7 +517,7 @@ public class AdvancedClient extends JFrame {
 
                 // Celebration animation
                 Timer celebrationTimer = new Timer(100, null);
-                final int[] count = { 0 };
+                final int[] count = {0};
                 celebrationTimer.addActionListener(e -> {
                     count[0]++;
                     if (count[0] > 5) {
@@ -524,6 +534,7 @@ public class AdvancedClient extends JFrame {
                 statusLabel.setText("[ERROR] Connection failed");
                 // statusLabel.stopPulse();
                 connectButton.setEnabled(true);
+                connectButton.setText("[CONNECT] Connect");
 
                 // Modern error dialog
                 JOptionPane.showMessageDialog(this,
@@ -536,6 +547,7 @@ public class AdvancedClient extends JFrame {
                 statusLabel.setText("[ERROR] Invalid port");
                 // statusLabel.stopPulse();
                 connectButton.setEnabled(true);
+                connectButton.setText("[CONNECT] Connect");
 
                 JOptionPane.showMessageDialog(this,
                         "Please enter a valid port number",
@@ -546,8 +558,9 @@ public class AdvancedClient extends JFrame {
     }
 
     private void disconnectFromServer() {
-        if (!isConnected)
+        if (!isConnected) {
             return;
+        }
 
         isConnected = false;
         try {
@@ -555,10 +568,12 @@ public class AdvancedClient extends JFrame {
                 output.println("/quit");
                 output.close();
             }
-            if (input != null)
+            if (input != null) {
                 input.close();
-            if (socket != null)
+            }
+            if (socket != null) {
                 socket.close();
+            }
         } catch (IOException e) {
             // Ignore
         }
@@ -578,7 +593,9 @@ public class AdvancedClient extends JFrame {
 
     private void updateConnectionStatus() {
         boolean connected = isConnected;
-        connectButton.setEnabled(!connected);
+        // Allow disconnect via the same button
+        connectButton.setEnabled(true);
+        connectButton.setText(connected ? "[DISCONNECT] Disconnect" : "[CONNECT] Connect");
         sendButton.setEnabled(connected);
         emojiButton.setEnabled(connected);
         messageField.setEnabled(connected);
@@ -594,8 +611,9 @@ public class AdvancedClient extends JFrame {
     }
 
     private void sendMessage() {
-        if (!isConnected || messageField.getText().trim().isEmpty())
+        if (!isConnected || messageField.getText().trim().isEmpty()) {
             return;
+        }
 
         String message = messageField.getText().trim();
 
@@ -622,50 +640,90 @@ public class AdvancedClient extends JFrame {
     private void handleIncomingMessage(String message) {
         SwingUtilities.invokeLater(() -> {
             try {
-                String[] parts = message.split("\\|", 4);
-                if (parts.length < 3) {
-                    // Fallback for old format
-                    appendToChat("Server: " + message + "\n", "regular");
-                    return;
-                }
-
-                String messageType = parts[0];
-                String timestamp = parts[1];
-                String content = parts.length > 3 ? parts[3] : parts[2];
+                String[] head = message.split("\\|", 2);
+                String messageType = head[0];
+                String rest = head.length == 2 ? head[1] : "";
 
                 switch (messageType) {
+                    case "PING" -> {
+                        // reply PONG immediately
+                        if (output != null) {
+                            output.println("PONG");
+                        }
+                    }
                     case "CHAT" -> {
-                        String sender = parts[2];
+                        // CHAT|ts|sender|content
+                        String[] p = rest.split("\\|", 3);
+                        if (p.length < 3) {
+                            appendToChat("Server: " + message + "\n", "regular");
+                            return;
+                        }
+                        String timestamp = p[0];
+                        String sender = p[1];
+                        String content = p[2];
                         appendToChat("[" + timestamp + "] " + sender + ": " + content + "\n", "user");
                     }
                     case "PRIVATE" -> {
-                        String sender = parts[2];
-                        // For PRIVATE we expect format PRIVATE|ts|from|to|content
-                        String[] privParts = message.split("\\|", 5);
-                        String privContent = privParts.length == 5 ? privParts[4] : content;
-                        appendToChat("[" + timestamp + "] [PM] " + sender + ": " + privContent + "\n", "own");
+                        // PRIVATE|ts|from|to|content
+                        String[] p = rest.split("\\|", 4);
+                        if (p.length < 4) {
+                            appendToChat("Server: " + message + "\n", "regular");
+                            return;
+                        }
+                        String timestamp = p[0];
+                        String from = p[1];
+                        String to = p[2];
+                        String content = p[3];
+                        String label = to != null && to.equalsIgnoreCase(username) ? "[PM]" : "[PM to " + to + "]";
+                        appendToChat("[" + timestamp + "] " + label + " " + from + ": " + content + "\n", "own");
                     }
-                    case "JOIN" -> appendToChat("[" + timestamp + "] *** " + content + " joined ***\n", "system");
-                    case "LEAVE" -> appendToChat("[" + timestamp + "] *** " + content + " left ***\n", "system");
-                    case "SYSTEM" -> appendToChat("[" + timestamp + "] * " + content + "\n", "system");
-                    case "USERLIST" -> updateUserList(content);
+                    case "JOIN", "LEAVE", "SYSTEM" -> {
+                        // TYPE|ts|content
+                        String[] p = rest.split("\\|", 2);
+                        if (p.length < 2) {
+                            appendToChat("Server: " + message + "\n", "regular");
+                            return;
+                        }
+                        String timestamp = p[0];
+                        String content = p[1];
+                        String prefix = switch (messageType) {
+                            case "JOIN" ->
+                                "*** ";
+                            case "LEAVE" ->
+                                "*** ";
+                            default ->
+                                "* ";
+                        };
+                        String suffix = switch (messageType) {
+                            case "JOIN" ->
+                                " joined ***";
+                            case "LEAVE" ->
+                                " left ***";
+                            default ->
+                                "";
+                        };
+                        appendToChat("[" + timestamp + "] " + prefix + content + suffix + "\n", "system");
+                    }
+                    case "USERLIST" -> {
+                        // USERLIST|ts|user1,user2,...
+                        String[] p = rest.split("\\|", 2);
+                        String content = p.length == 2 ? p[1] : "";
+                        updateUserList(content);
+                    }
                     case "TYPING" -> {
-                        // content expected username|true/false
-                        String[] tp = parts[2].split("\\|");
-                        if (tp.length == 2) {
-                            String who = tp[0];
-                            boolean isTyping = Boolean.parseBoolean(tp[1]);
-                            if (!who.equals(username)) {
-                                typingLabel.setText(isTyping ? (who + " is typing…") : " ");
-                            }
+                        // TYPING|ts|username|true/false
+                        String[] p = rest.split("\\|", 3);
+                        if (p.length < 3) {
+                            return;
+                        }
+                        String who = p[1];
+                        boolean typing = Boolean.parseBoolean(p[2]);
+                        if (who != null && !who.equals(username)) {
+                            typingLabel.setText(typing ? (who + " is typing…") : " ");
                         }
                     }
-                    case "PING" -> {
-                        // reply PONG immediately
-                        if (output != null)
-                            output.println("PONG");
-                    }
-                    default -> appendToChat("[" + timestamp + "] " + message + "\n", "regular");
+                    default ->
+                        appendToChat("Server: " + message + "\n", "regular");
                 }
             } catch (Exception e) {
                 // Fallback for any parsing errors
@@ -689,8 +747,7 @@ public class AdvancedClient extends JFrame {
         userCountLabel.setText("[USERS] " + userListModel.size() + " online");
 
         // Update the user list title with count
-        JScrollPane userScroll = (JScrollPane) chatPanel.getComponent(1);
-        if (userScroll.getBorder() instanceof TitledBorder border) {
+        if (userScroll != null && userScroll.getBorder() instanceof TitledBorder border) {
             border.setTitle("[USERS] Online Users (" + userListModel.size() + ")");
             userScroll.repaint();
         }

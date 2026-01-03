@@ -1,7 +1,9 @@
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
@@ -11,6 +13,7 @@ import javax.swing.border.*;
 import javax.swing.table.*;
 
 public class Server extends JFrame {
+
     private static final int PORT = 12345;
     private ServerSocket serverSocket;
     private boolean isRunning = false;
@@ -84,12 +87,12 @@ public class Server extends JFrame {
     private Font getEmojiCompatibleFont(int style, int size) {
         // Try different fonts that support emojis
         String[] emojiSupportingFonts = {
-                "Segoe UI Emoji", // Windows
-                "Apple Color Emoji", // macOS
-                "Noto Color Emoji", // Linux
-                "Segoe UI", // Fallback
-                "Arial Unicode MS", // Fallback
-                "SansSerif" // Last resort
+            "Segoe UI Emoji", // Windows
+            "Apple Color Emoji", // macOS
+            "Noto Color Emoji", // Linux
+            "Segoe UI", // Fallback
+            "Arial Unicode MS", // Fallback
+            "SansSerif" // Last resort
         };
 
         for (String fontName : emojiSupportingFonts) {
@@ -151,8 +154,9 @@ public class Server extends JFrame {
     }
 
     private void startServer() {
-        if (isRunning)
+        if (isRunning) {
             return;
+        }
 
         int selectedPort = (Integer) portSpinner.getValue();
 
@@ -210,8 +214,9 @@ public class Server extends JFrame {
     }
 
     public void stopServer() {
-        if (!isRunning)
+        if (!isRunning) {
             return;
+        }
 
         isRunning = false;
         try {
@@ -227,6 +232,7 @@ public class Server extends JFrame {
             }
             connectedClients.clear();
             clientUsernames.clear();
+            clientConnectTimes.clear();
             clientRowIndex.clear();
             clientMessageCounts.clear();
         } catch (IOException e) {
@@ -236,7 +242,9 @@ public class Server extends JFrame {
         SwingUtilities.invokeLater(() -> {
             startButton.setEnabled(true);
             stopButton.setEnabled(false);
+            broadcastButton.setEnabled(false);
             statusLabel.setText("[STOPPED] Server Stopped");
+            statusLabel.setForeground(textColor);
             addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] Server stopped");
 
             // Synchronize dashboard after server stop
@@ -255,12 +263,17 @@ public class Server extends JFrame {
                 String username = clientUsernames.getOrDefault(senderId, "Server");
                 formattedMessage = "CHAT|" + timestamp + "|" + username + "|" + message;
             }
-            case "JOIN" -> formattedMessage = "JOIN|" + timestamp + "|" + message;
-            case "LEAVE" -> formattedMessage = "LEAVE|" + timestamp + "|" + message;
-            case "SYSTEM" -> formattedMessage = "SYSTEM|" + timestamp + "|" + message;
-            case "TYPING" -> formattedMessage = "TYPING|" + timestamp + "|" + message; // message carries
-                                                                                       // username|true/false
-            default -> formattedMessage = "CHAT|" + timestamp + "|Server|" + message;
+            case "JOIN" ->
+                formattedMessage = "JOIN|" + timestamp + "|" + message;
+            case "LEAVE" ->
+                formattedMessage = "LEAVE|" + timestamp + "|" + message;
+            case "SYSTEM" ->
+                formattedMessage = "SYSTEM|" + timestamp + "|" + message;
+            case "TYPING" ->
+                formattedMessage = "TYPING|" + timestamp + "|" + message; // message carries
+            // username|true/false
+            default ->
+                formattedMessage = "CHAT|" + timestamp + "|Server|" + message;
         }
 
         // Send to all connected clients
@@ -313,6 +326,7 @@ public class Server extends JFrame {
 
     // Inner class to handle client connections
     private class ClientHandler implements Runnable {
+
         private final Socket socket;
         private final String clientId;
         private BufferedReader input;
@@ -330,13 +344,20 @@ public class Server extends JFrame {
         @Override
         public void run() {
             try {
-                input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                output = new PrintWriter(socket.getOutputStream(), true);
+                input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+                output = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
 
-                // Wait for username from client
-                String usernameMessage = input.readLine();
-                if (usernameMessage != null && usernameMessage.startsWith("USERNAME|")) {
-                    this.username = usernameMessage.substring(9);
+                // Wait for username from client (tolerate legacy clients)
+                String firstLine = input.readLine();
+                String pendingFirstChatMessage = null;
+                if (firstLine != null && firstLine.startsWith("USERNAME|")) {
+                    this.username = firstLine.substring(9).trim();
+                    if (this.username.isEmpty()) {
+                        this.username = "User" + (connectedClients.size() + 1);
+                    }
+                } else {
+                    // Legacy client: treat the first line as a chat message
+                    pendingFirstChatMessage = firstLine;
                 }
 
                 // Store username
@@ -358,6 +379,12 @@ public class Server extends JFrame {
                     // Synchronize dashboard when client joins
                     synchronizeDashboard();
                 });
+
+                // If the client didn't send USERNAME first, don't drop their first message
+                if (pendingFirstChatMessage != null && !pendingFirstChatMessage.trim().isEmpty()) {
+                    broadcastMessage(pendingFirstChatMessage, clientId, "CHAT");
+                    incrementMessageCount(clientId);
+                }
 
                 String message;
                 while (isConnected && (message = input.readLine()) != null) {
@@ -425,8 +452,9 @@ public class Server extends JFrame {
         }
 
         public void disconnect() {
-            if (!isConnected)
+            if (!isConnected) {
                 return;
+            }
 
             isConnected = false;
             String leavingUsername = clientUsernames.get(clientId);
@@ -437,6 +465,9 @@ public class Server extends JFrame {
             // Clean up
             connectedClients.remove(clientId);
             clientUsernames.remove(clientId);
+            clientConnectTimes.remove(clientId);
+            clientMessageCounts.remove(clientId);
+            clientRowIndex.remove(clientId);
 
             // Update user list for remaining clients
             broadcastUserList();
@@ -448,12 +479,15 @@ public class Server extends JFrame {
             });
 
             try {
-                if (input != null)
+                if (input != null) {
                     input.close();
-                if (output != null)
+                }
+                if (output != null) {
                     output.close();
-                if (socket != null)
+                }
+                if (socket != null) {
                     socket.close();
+                }
             } catch (IOException e) {
                 // Ignore
             }
@@ -510,9 +544,9 @@ public class Server extends JFrame {
         toolbar.add(rightPanel, BorderLayout.EAST);
 
         // Add action listeners
-        startButton.addActionListener(_ -> startServer());
-        stopButton.addActionListener(_ -> stopServer());
-        clearLogButton.addActionListener(_ -> {
+        startButton.addActionListener(e -> startServer());
+        stopButton.addActionListener(e -> stopServer());
+        clearLogButton.addActionListener(e -> {
             logArea.setText("");
             if (dashboardActivityFeed != null) {
                 dashboardActivityFeed.setText("");
@@ -623,12 +657,18 @@ public class Server extends JFrame {
 
         // Store references to dashboard stat labels for real-time updates
         switch (type) {
-            case "clients" -> dashboardClientCountLabel = valueLabel;
-            case "messages" -> totalMessagesStatLabel = valueLabel;
-            case "uptime" -> dashboardUptimeLabel = valueLabel;
-            case "port" -> dashboardPortLabel = valueLabel;
-            case "memory" -> dashboardMemoryLabel = valueLabel;
-            case "connections" -> dashboardConnectionsLabel = valueLabel;
+            case "clients" ->
+                dashboardClientCountLabel = valueLabel;
+            case "messages" ->
+                totalMessagesStatLabel = valueLabel;
+            case "uptime" ->
+                dashboardUptimeLabel = valueLabel;
+            case "port" ->
+                dashboardPortLabel = valueLabel;
+            case "memory" ->
+                dashboardMemoryLabel = valueLabel;
+            case "connections" ->
+                dashboardConnectionsLabel = valueLabel;
         }
 
         return card;
@@ -667,7 +707,7 @@ public class Server extends JFrame {
         clientPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Client table
-        String[] columns = { "Username", "IP Address", "Connect Time", "Status", "Messages Sent" };
+        String[] columns = {"Username", "IP Address", "Connect Time", "Status", "Messages Sent"};
         clientTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -693,14 +733,15 @@ public class Server extends JFrame {
 
         // Selection listener to enable kick button
         clientTable.getSelectionModel().addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting())
+            if (e.getValueIsAdjusting()) {
                 return;
+            }
             boolean hasSelection = clientTable.getSelectedRow() >= 0;
             banUserButton.setEnabled(hasSelection);
         });
 
         // Kick selected user
-        banUserButton.addActionListener(_ -> kickSelectedClient());
+        banUserButton.addActionListener(e -> kickSelectedClient());
 
         return clientPanel;
     }
@@ -737,7 +778,7 @@ public class Server extends JFrame {
         broadcastPanel.add(inputPanel, BorderLayout.CENTER);
 
         // Wire broadcast action
-        broadcastButton.addActionListener(_ -> {
+        broadcastButton.addActionListener(e -> {
             String msg = broadcastField.getText().trim();
             if (!msg.isEmpty()) {
                 broadcastMessage(msg, "server", "CHAT");
@@ -747,7 +788,7 @@ public class Server extends JFrame {
             }
         });
         // Enter to send
-        broadcastField.addActionListener(_ -> broadcastButton.doClick());
+        broadcastField.addActionListener(e -> broadcastButton.doClick());
 
         return broadcastPanel;
     }
@@ -824,7 +865,7 @@ public class Server extends JFrame {
     }
 
     private void startUIUpdateTimer() {
-        uiUpdateTimer = new javax.swing.Timer(1000, _ -> updateUIStats());
+        uiUpdateTimer = new javax.swing.Timer(1000, e -> updateUIStats());
         uiUpdateTimer.start();
     }
 
@@ -963,7 +1004,7 @@ public class Server extends JFrame {
     private void addClientToTable(String clientId, String username) {
         String ip = clientId.split(":")[0];
         String connectTime = LocalDateTime.now().format(timeFormatter);
-        Object[] row = { username, ip, connectTime, "Online", 0 };
+        Object[] row = {username, ip, connectTime, "Online", 0};
         int rowIndex = clientTableModel.getRowCount();
         clientTableModel.addRow(row);
         clientRowIndex.put(clientId, rowIndex);
@@ -1005,8 +1046,9 @@ public class Server extends JFrame {
 
     private void kickSelectedClient() {
         int row = clientTable.getSelectedRow();
-        if (row < 0)
+        if (row < 0) {
             return;
+        }
         String username = (String) clientTableModel.getValueAt(row, 0);
         String clientIdToKick = null;
         for (Map.Entry<String, String> e : clientUsernames.entrySet()) {

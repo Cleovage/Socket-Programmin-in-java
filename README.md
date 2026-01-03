@@ -24,7 +24,7 @@ A modern Java chat application featuring a professional GUI for both server and 
 
 ## Getting Started
 ### Prerequisites
-- Java Development Kit (JDK) 8 or higher
+- Java Development Kit (JDK) 17 or higher
 - Windows, Linux, or macOS
 
 ### Build & Run
