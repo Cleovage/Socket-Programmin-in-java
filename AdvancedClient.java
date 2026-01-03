@@ -97,27 +97,27 @@ public class AdvancedClient extends JFrame {
     }
 
     private void createModernConnectionPanel() {
-        connectionPanel = new ModernPanel(new BorderLayout(), SURFACE_COLOR, 0, false);
-        connectionPanel.setBorder(new EmptyBorder(20, 30, 20, 30));
+        connectionPanel = new ModernPanel(new BorderLayout(10, 0), SURFACE_COLOR, 0, false);
+        connectionPanel.setBorder(new EmptyBorder(18, 28, 18, 28));
 
         // Initialize connection fields
         serverField = new ModernTextField("localhost", 0, PRIMARY_COLOR, BORDER_COLOR);
-        serverField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        serverField.setPreferredSize(new Dimension(120, 30));
+        serverField.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        serverField.setPreferredSize(new Dimension(140, 42));
 
         portField = new ModernTextField("12345", 0, PRIMARY_COLOR, BORDER_COLOR);
-        portField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        portField.setPreferredSize(new Dimension(80, 30));
+        portField.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        portField.setPreferredSize(new Dimension(100, 42));
 
         usernameField = new ModernTextField("", 0, PRIMARY_COLOR, BORDER_COLOR);
-        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        usernameField.setPreferredSize(new Dimension(120, 30));
+        usernameField.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        usernameField.setPreferredSize(new Dimension(140, 42));
 
         // Left side - Connection controls with improved alignment
         JPanel leftPanel = new JPanel(new GridBagLayout());
         leftPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 10, 0, 10);
+        gbc.insets = new Insets(0, 12, 0, 12);
         gbc.anchor = GridBagConstraints.WEST;
 
         // Server field
@@ -156,7 +156,7 @@ public class AdvancedClient extends JFrame {
         leftPanel.add(connectButton, gbc);
 
         // Right side - Status with improved alignment
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 25, 5));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 8));
         rightPanel.setOpaque(false);
 
         statusLabel = new JLabel("⚫ Offline");
@@ -175,8 +175,8 @@ public class AdvancedClient extends JFrame {
     }
 
     private void createModernChatPanel() {
-        chatPanel = new ModernPanel(new BorderLayout(15, 0), BACKGROUND_COLOR, 0, false);
-        chatPanel.setBorder(new EmptyBorder(20, 30, 10, 30));
+        chatPanel = new ModernPanel(new BorderLayout(15, 12), BACKGROUND_COLOR, 0, false);
+        chatPanel.setBorder(new EmptyBorder(18, 28, 18, 28));
 
         // Modern chat area with improved readability
         chatArea = new JTextPane();
@@ -192,7 +192,9 @@ public class AdvancedClient extends JFrame {
 
         // Modern scroll pane with custom styling
         JScrollPane chatScroll = new JScrollPane(chatArea);
-        chatScroll.setBorder(BorderFactory.createTitledBorder("💬 Messages"));
+        chatScroll.setBorder(new CompoundBorder(
+                BorderFactory.createTitledBorder("💬 Messages"),
+                new EmptyBorder(10, 10, 10, 10)));
         chatScroll.setBackground(CARD_COLOR);
         chatScroll.getViewport().setBackground(CARD_COLOR);
         chatScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -204,7 +206,8 @@ public class AdvancedClient extends JFrame {
         // Modern user list with improved readability
         userListModel = new DefaultListModel<>();
         userList = new JList<>(userListModel);
-        userList.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        userList.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        userList.setFixedCellHeight(28);
         userList.setBackground(CARD_COLOR);
         userList.setForeground(TEXT_COLOR);
         userList.setSelectionBackground(new Color(88, 86, 214, 100));
@@ -213,8 +216,10 @@ public class AdvancedClient extends JFrame {
         // userList.setCellRenderer(new DefaultListCellRenderer());
 
         userScroll = new JScrollPane(userList);
-        userScroll.setBorder(BorderFactory.createTitledBorder("👥 Online (0)"));
-        userScroll.setPreferredSize(new Dimension(250, 0));
+        userScroll.setBorder(new CompoundBorder(
+                BorderFactory.createTitledBorder("👥 Online (0)"),
+                new EmptyBorder(10, 10, 10, 10)));
+        userScroll.setPreferredSize(new Dimension(240, 0));
         userScroll.setBackground(CARD_COLOR);
         userScroll.getViewport().setBackground(CARD_COLOR);
         styleScrollBar(userScroll);
@@ -238,8 +243,8 @@ public class AdvancedClient extends JFrame {
     }
 
     private void createModernInputPanel() {
-        inputPanel = new ModernPanel(new BorderLayout(15, 0), BACKGROUND_COLOR, 0, false);
-        inputPanel.setBorder(new EmptyBorder(10, 30, 30, 30));
+        inputPanel = new ModernPanel(new BorderLayout(15, 12), BACKGROUND_COLOR, 0, false);
+        inputPanel.setBorder(new EmptyBorder(18, 28, 24, 28));
 
         // Message input container with glassmorphism effect
         JPanel inputContainer = new JPanel(new BorderLayout(15, 0));
@@ -272,10 +277,10 @@ public class AdvancedClient extends JFrame {
         // Create input layout with better alignment
         JPanel messagePanel = new JPanel(new BorderLayout());
         messagePanel.setOpaque(false);
-        messagePanel.setBorder(new LineBorder(CARD_COLOR, 2));
+        messagePanel.setBorder(new CompoundBorder(new LineBorder(CARD_COLOR, 2, true), new EmptyBorder(6, 10, 6, 10)));
         messagePanel.add(messageField, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 5));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
         buttonPanel.setOpaque(false);
         buttonPanel.add(emojiButton);
         buttonPanel.add(sendButton);
@@ -287,8 +292,9 @@ public class AdvancedClient extends JFrame {
 
         // Typing indicator with improved readability
         typingLabel = new JLabel(" ");
-        typingLabel.setFont(new Font("Segoe UI", Font.ITALIC, 13));
+        typingLabel.setFont(getEmojiCompatibleFont(Font.ITALIC, 13));
         typingLabel.setForeground(TEXT_SECONDARY);
+        typingLabel.setBorder(new EmptyBorder(8, 4, 0, 4));
         inputPanel.add(typingLabel, BorderLayout.SOUTH);
     }
 

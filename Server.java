@@ -498,10 +498,10 @@ public class Server extends JFrame {
         ModernPanel toolbar = new ModernPanel(new BorderLayout(), backgroundColor, 0, false);
         toolbar.setBorder(new CompoundBorder(
                 new MatteBorder(0, 0, 2, 0, primaryColor),
-                new EmptyBorder(10, 15, 10, 15)));
+                new EmptyBorder(12, 18, 12, 18)));
 
         // Left side - Server controls with improved alignment
-        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 15, 5), backgroundColor, 0, false);
+        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 12, 8), backgroundColor, 0, false);
         leftPanel.setOpaque(false);
 
         startButton = new ModernButton("▶ Start", successColor);
@@ -515,19 +515,26 @@ public class Server extends JFrame {
 
         // Port selection with improved styling
         portSpinner = new JSpinner(new SpinnerNumberModel(PORT, 1024, 65535, 1));
-        portSpinner.setPreferredSize(new Dimension(90, 35));
+        portSpinner.setPreferredSize(new Dimension(110, 38));
 
         // Apply dark theme to spinner
         portSpinner.setBackground(cardColor);
         portSpinner.setForeground(textColor);
         portSpinner.setBorder(BorderFactory.createLineBorder(borderColor));
-        portSpinner.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        portSpinner.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        if (portSpinner.getEditor() instanceof JSpinner.DefaultEditor editor) {
+            JFormattedTextField tf = editor.getTextField();
+            tf.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+            tf.setBackground(cardColor);
+            tf.setForeground(textColor);
+            tf.setCaretColor(textColor);
+            tf.setBorder(new EmptyBorder(6, 8, 6, 8));
+        }
 
         // Create local port label for toolbar
         JLabel toolbarPortLabel = new JLabel("🔌 Port:");
         toolbarPortLabel.setForeground(textColor);
-        toolbarPortLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
-        toolbarPortLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        toolbarPortLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
 
         leftPanel.add(toolbarPortLabel);
         leftPanel.add(portSpinner);
@@ -535,12 +542,12 @@ public class Server extends JFrame {
         leftPanel.add(startButton);
         leftPanel.add(stopButton);
         leftPanel.add(clearLogButton); // Right side - Status indicators
-        ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0), backgroundColor, 0, false);
+        ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8), backgroundColor, 0, false);
         rightPanel.setOpaque(false);
 
         statusLabel = new JLabel("⚫ Offline");
         statusLabel.setForeground(textColor);
-        statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        statusLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 14));
 
         rightPanel.add(statusLabel);
 
@@ -562,7 +569,7 @@ public class Server extends JFrame {
 
     private void createTabbedInterface() {
         mainTabs = new JTabbedPane(JTabbedPane.TOP);
-        mainTabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        mainTabs.setFont(getEmojiCompatibleFont(Font.BOLD, 14));
 
         // Apply dark theme to tabbed pane
         mainTabs.setBackground(backgroundColor);
@@ -588,8 +595,8 @@ public class Server extends JFrame {
     }
 
     private JPanel createDashboardTab() {
-        ModernPanel dashboard = new ModernPanel(new BorderLayout(15, 15), backgroundColor, 0, false);
-        dashboard.setBorder(new EmptyBorder(20, 20, 20, 20));
+        ModernPanel dashboard = new ModernPanel(new BorderLayout(18, 18), backgroundColor, 0, false);
+        dashboard.setBorder(new EmptyBorder(20, 22, 20, 22));
         dashboard.setBackground(backgroundColor);
 
         // Stats Panel
@@ -607,20 +614,21 @@ public class Server extends JFrame {
         dashboard.add(statsPanel, BorderLayout.NORTH);
 
         // Real-time activity feed
-        ModernPanel activityPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 8, true);
-        activityPanel.setBorder(BorderFactory.createTitledBorder(
-                new LineBorder(new Color(200, 200, 200)),
-                "🔴 Live Activity",
-                TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 16)));
-        activityPanel.setBackground(backgroundColor);
-
+        ModernPanel activityPanel = new ModernPanel(new BorderLayout(0, 10), cardColor, 8, true);
+        activityPanel.setBorder(new CompoundBorder(
+                BorderFactory.createTitledBorder(
+                        new LineBorder(borderColor),
+                        "🔴 Live Activity",
+                        TitledBorder.LEFT, TitledBorder.TOP,
+                        getEmojiCompatibleFont(Font.BOLD, 16)),
+                new EmptyBorder(12, 12, 12, 12)));
+        activityPanel.setBackground(cardColor);
         dashboardActivityFeed = new JTextArea(15, 40);
         dashboardActivityFeed.setEditable(false);
         dashboardActivityFeed.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
         dashboardActivityFeed.setBackground(cardColor);
         dashboardActivityFeed.setForeground(textColor);
-        dashboardActivityFeed.setBorder(new EmptyBorder(15, 15, 15, 15));
+        dashboardActivityFeed.setBorder(new EmptyBorder(16, 16, 16, 16));
 
         JScrollPane activityScroll = new JScrollPane(dashboardActivityFeed);
         activityScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -679,12 +687,13 @@ public class Server extends JFrame {
     }
 
     private JPanel createLogTab() {
-        JPanel logPanel = new JPanel(new BorderLayout());
-        logPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel logPanel = new JPanel(new BorderLayout(0, 12));
+        logPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
         // Log controls
-        JPanel logControls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        autoScrollToggle = new JToggleButton("[AUTO] Auto-scroll", true);
+        JPanel logControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        autoScrollToggle = new JToggleButton("Auto-scroll", true);
+        autoScrollToggle.setFont(getEmojiCompatibleFont(Font.PLAIN, 12));
         logControls.add(autoScrollToggle);
 
         logPanel.add(logControls, BorderLayout.NORTH);
@@ -695,7 +704,7 @@ public class Server extends JFrame {
         logArea.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
         logArea.setBackground(cardColor);
         logArea.setForeground(textColor);
-        logArea.setBorder(new EmptyBorder(10, 10, 10, 10));
+        logArea.setBorder(new EmptyBorder(14, 14, 14, 14));
 
         JScrollPane logScroll = new JScrollPane(logArea);
         logScroll.setBorder(null);
@@ -707,8 +716,8 @@ public class Server extends JFrame {
     }
 
     private JPanel createClientTab() {
-        ModernPanel clientPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 0, false);
-        clientPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        ModernPanel clientPanel = new ModernPanel(new BorderLayout(0, 12), backgroundColor, 0, false);
+        clientPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
         // Client table
         String[] columns = {"Username", "IP Address", "Connect Time", "Status", "Messages Sent"};
@@ -720,15 +729,24 @@ public class Server extends JFrame {
         };
 
         clientTable = new JTable(clientTableModel);
-        clientTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        clientTable.setRowHeight(28);
+        clientTable.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        clientTable.setRowHeight(30);
+        clientTable.getTableHeader().setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         clientTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        clientTable.setBackground(cardColor);
+        clientTable.setForeground(textColor);
+        clientTable.setGridColor(borderColor);
+        clientTable.getTableHeader().setBackground(cardColor);
+        clientTable.getTableHeader().setForeground(textColor);
 
         JScrollPane clientScroll = new JScrollPane(clientTable);
+        clientScroll.setBorder(new EmptyBorder(6, 6, 6, 6));
+        clientScroll.getViewport().setBackground(cardColor);
         clientPanel.add(clientScroll, BorderLayout.CENTER);
 
         // Client actions
-        ModernPanel actionPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT), Color.WHITE, 0, false);
+        ModernPanel actionPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 12, 6), backgroundColor, 0, false);
+        actionPanel.setBorder(new EmptyBorder(6, 0, 0, 0));
         banUserButton = new ModernButton("🚫 Kick", new Color(244, 67, 54));
         banUserButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         banUserButton.setEnabled(false);
@@ -752,15 +770,16 @@ public class Server extends JFrame {
     }
 
     private JPanel createBroadcastTab() {
-        ModernPanel broadcastPanel = new ModernPanel(new BorderLayout(), Color.WHITE, 0, false);
-        broadcastPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        ModernPanel broadcastPanel = new ModernPanel(new BorderLayout(0, 16), backgroundColor, 0, false);
+        broadcastPanel.setBorder(new EmptyBorder(20, 22, 20, 22));
 
         JLabel titleLabel = new JLabel("📢 Broadcast Message");
         titleLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 18));
+        titleLabel.setForeground(textColor);
         broadcastPanel.add(titleLabel, BorderLayout.NORTH);
 
-        ModernPanel inputPanel = new ModernPanel(new BorderLayout(10, 10), Color.WHITE, 0, false);
-        inputPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
+        ModernPanel inputPanel = new ModernPanel(new BorderLayout(12, 0), backgroundColor, 0, false);
+        inputPanel.setBorder(new EmptyBorder(18, 0, 0, 0));
 
         broadcastField = new JTextField();
         broadcastField.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
@@ -774,7 +793,7 @@ public class Server extends JFrame {
         broadcastButton = new ModernButton("📤 Send", primaryColor);
         broadcastButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         broadcastButton.setForeground(Color.WHITE);
-        broadcastButton.setBorder(new EmptyBorder(10, 20, 10, 20));
+        broadcastButton.setBorder(new EmptyBorder(10, 18, 10, 18));
         broadcastButton.setEnabled(false);
 
         inputPanel.add(broadcastField, BorderLayout.CENTER);
@@ -799,24 +818,31 @@ public class Server extends JFrame {
     }
 
     private JPanel createSettingsTab() {
-        ModernPanel settingsPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT), Color.WHITE, 0, false);
+        ModernPanel settingsPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 0, 0), backgroundColor, 0, false);
         settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
-        settingsPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        settingsPanel.setBorder(new EmptyBorder(20, 22, 20, 22));
 
         JLabel titleLabel = new JLabel("⚙️ Configuration");
         titleLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 18));
+        titleLabel.setForeground(textColor);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         settingsPanel.add(titleLabel);
 
-        settingsPanel.add(Box.createVerticalStrut(20));
+        settingsPanel.add(Box.createVerticalStrut(18));
 
         // Log level setting
-        ModernPanel logLevelPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT), Color.WHITE, 0, false);
-        logLevelPanel.add(new JLabel("Log Level:"));
+        ModernPanel logLevelPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 10, 6), backgroundColor, 0, false);
+        logLevelPanel.setBorder(new EmptyBorder(4, 2, 12, 2));
+        JLabel logLevelLabel = new JLabel("Log Level:");
+        logLevelLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        logLevelLabel.setForeground(textColor);
+        logLevelLabel.setBorder(new EmptyBorder(0, 0, 0, 6));
+        logLevelPanel.add(logLevelLabel);
         logLevelSlider = new JSlider(1, 5, 3);
         logLevelSlider.setMajorTickSpacing(1);
         logLevelSlider.setPaintTicks(true);
         logLevelSlider.setPaintLabels(true);
+        logLevelSlider.setBorder(new EmptyBorder(4, 4, 0, 4));
         logLevelPanel.add(logLevelSlider);
         logLevelPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         settingsPanel.add(logLevelPanel);
