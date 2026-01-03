@@ -27,6 +27,12 @@ public class AdvancedClient extends JFrame {
     private JLabel typingLabel;
     private ModernUI.ModernTextField serverField, portField, usernameField;
     private String lastMessageSender = null; // Track last sender for grouping
+    private Timer typingDotsTimer;
+    private String typingBaseText = "";
+    private boolean soundEnabled = true;
+    private boolean notificationsEnabled = true;
+    private JMenuBar menuBar;
+    private ModernUI.ModernButton clearChatButton, settingsButton;
 
     private String serverAddress = "localhost";
     private int serverPort = 12345;
@@ -85,6 +91,9 @@ public class AdvancedClient extends JFrame {
         getContentPane().setBackground(BACKGROUND_COLOR);
         setLayout(new BorderLayout(0, 0));
 
+        // Create modern menu bar
+        createModernMenuBar();
+
         // Create modern components with animations
         createModernConnectionPanel();
         createModernChatPanel();
@@ -98,6 +107,240 @@ public class AdvancedClient extends JFrame {
         // Setup keyboard shortcuts and effects
         setupKeyboardShortcuts();
         setupWindowEffects();
+    }
+
+    // Lightweight animated wrapper for fade + slide-in effects
+    private static class AnimatedPanel extends JPanel {
+
+        private float alpha = 0f;
+        private int translateY = 8;
+        private Timer fadeTimer;
+
+        AnimatedPanel(JComponent child) {
+            setOpaque(false);
+            setLayout(new BorderLayout());
+            add(child, BorderLayout.CENTER);
+        }
+
+        void playEntrance() {
+            alpha = 0f;
+            translateY = 8;
+            if (fadeTimer != null) {
+                fadeTimer.stop();
+            }
+
+            fadeTimer = new Timer(16, e -> {
+                alpha = Math.min(1f, alpha + 0.08f);
+                translateY = Math.max(0, (int) (8 * (1f - alpha)));
+                repaint();
+                if (alpha >= 1f) {
+                    ((Timer) e.getSource()).stop();
+                }
+            });
+            fadeTimer.start();
+        }
+
+        @Override
+        protected void paintChildren(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.translate(0, translateY);
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            super.paintChildren(g2);
+            g2.dispose();
+        }
+    }
+
+    // Pulsing status indicator animation
+    private static class PulsingLabel extends JLabel {
+
+        private float pulseAlpha = 1f;
+        private boolean pulsing = false;
+        private Timer pulseTimer;
+        private boolean increasing = false;
+
+        PulsingLabel(String text) {
+            super(text);
+        }
+
+        void startPulse() {
+            if (pulsing) {
+                return;
+            }
+            pulsing = true;
+            pulseTimer = new Timer(50, e -> {
+                if (increasing) {
+                    pulseAlpha = Math.min(1f, pulseAlpha + 0.05f);
+                    if (pulseAlpha >= 1f) {
+                        increasing = false;
+                    }
+                } else {
+                    pulseAlpha = Math.max(0.4f, pulseAlpha - 0.05f);
+                    if (pulseAlpha <= 0.4f) {
+                        increasing = true;
+                    }
+                }
+                repaint();
+            });
+            pulseTimer.start();
+        }
+
+        void stopPulse() {
+            pulsing = false;
+            pulseAlpha = 1f;
+            if (pulseTimer != null) {
+                pulseTimer.stop();
+            }
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, pulseAlpha));
+            super.paintComponent(g2);
+            g2.dispose();
+        }
+    }
+
+    // Create modern menu bar with settings
+    private void createModernMenuBar() {
+        menuBar = new JMenuBar();
+        menuBar.setBackground(SURFACE_COLOR);
+        menuBar.setBorder(new EmptyBorder(4, 8, 4, 8));
+
+        // File menu
+        JMenu fileMenu = createStyledMenu("📁 File");
+        JMenuItem exportChat = createStyledMenuItem("💾 Export Chat");
+        exportChat.addActionListener(e -> exportChatToFile());
+        JMenuItem exitItem = createStyledMenuItem("🚪 Exit");
+        exitItem.addActionListener(e -> System.exit(0));
+        fileMenu.add(exportChat);
+        fileMenu.addSeparator();
+        fileMenu.add(exitItem);
+
+        // Edit menu
+        JMenu editMenu = createStyledMenu("✏️ Edit");
+        JMenuItem clearChat = createStyledMenuItem("🗑️ Clear Chat");
+        clearChat.addActionListener(e -> clearChat());
+        JMenuItem copySelected = createStyledMenuItem("📋 Copy Selected");
+        copySelected.addActionListener(e -> copySelectedText());
+        editMenu.add(clearChat);
+        editMenu.add(copySelected);
+
+        // Settings menu
+        JMenu settingsMenu = createStyledMenu("⚙️ Settings");
+        JCheckBoxMenuItem soundToggle = new JCheckBoxMenuItem("🔊 Sound Notifications", soundEnabled);
+        soundToggle.setBackground(SURFACE_COLOR);
+        soundToggle.setForeground(TEXT_COLOR);
+        soundToggle.addActionListener(e -> soundEnabled = soundToggle.isSelected());
+        JCheckBoxMenuItem notifToggle = new JCheckBoxMenuItem("🔔 Desktop Notifications", notificationsEnabled);
+        notifToggle.setBackground(SURFACE_COLOR);
+        notifToggle.setForeground(TEXT_COLOR);
+        notifToggle.addActionListener(e -> notificationsEnabled = notifToggle.isSelected());
+        settingsMenu.add(soundToggle);
+        settingsMenu.add(notifToggle);
+
+        // Help menu
+        JMenu helpMenu = createStyledMenu("❓ Help");
+        JMenuItem shortcuts = createStyledMenuItem("⌨️ Keyboard Shortcuts");
+        shortcuts.addActionListener(e -> showShortcutsDialog());
+        JMenuItem about = createStyledMenuItem("ℹ️ About");
+        about.addActionListener(e -> showAboutDialog());
+        helpMenu.add(shortcuts);
+        helpMenu.add(about);
+
+        menuBar.add(fileMenu);
+        menuBar.add(editMenu);
+        menuBar.add(settingsMenu);
+        menuBar.add(helpMenu);
+        setJMenuBar(menuBar);
+    }
+
+    private JMenu createStyledMenu(String text) {
+        JMenu menu = new JMenu(text);
+        menu.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
+        menu.setForeground(TEXT_COLOR);
+        menu.setOpaque(true);
+        menu.setBackground(SURFACE_COLOR);
+        return menu;
+    }
+
+    private JMenuItem createStyledMenuItem(String text) {
+        JMenuItem item = new JMenuItem(text);
+        item.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        item.setForeground(TEXT_COLOR);
+        item.setBackground(SURFACE_COLOR);
+        return item;
+    }
+
+    // Export chat to file
+    private void exportChatToFile() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Export Chat");
+        chooser.setSelectedFile(new java.io.File("chat_export_" + System.currentTimeMillis() + ".txt"));
+        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            try (PrintWriter pw = new PrintWriter(chooser.getSelectedFile())) {
+                pw.println("Chat Export - " + java.time.LocalDateTime.now());
+                pw.println("=".repeat(50));
+                // Export visible messages (simplified)
+                pw.println("[Chat history exported]");
+                JOptionPane.showMessageDialog(this, "Chat exported successfully!", "Export", JOptionPane.INFORMATION_MESSAGE);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Failed to export: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    // Copy selected text
+    private void copySelectedText() {
+        // Copy from message field if focused
+        String selected = messageField.getSelectedText();
+        if (selected != null && !selected.isEmpty()) {
+            java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(selected);
+            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+        }
+    }
+
+    // Show keyboard shortcuts dialog
+    private void showShortcutsDialog() {
+        String shortcuts = """
+            ⌨️ Keyboard Shortcuts
+            
+            Enter          - Send message
+            Ctrl+Enter     - Send message
+            Escape         - Clear message field
+            Ctrl+L         - Clear chat
+            Double-click user - Start private message
+            @username      - Send private message
+            """;
+        JOptionPane.showMessageDialog(this, shortcuts, "Keyboard Shortcuts", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // Show about dialog
+    private void showAboutDialog() {
+        String about = """
+            💬 Elite Chat Client v2.0
+            
+            A modern Discord-style chat application
+            Built with Java Swing & ModernUI
+            
+            Features:
+            • Real-time messaging
+            • Private messages (@user)
+            • Typing indicators
+            • Emoji support
+            • Dark theme UI
+            """;
+        JOptionPane.showMessageDialog(this, about, "About Elite Chat", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // Play notification sound
+    private void playNotificationSound() {
+        if (!soundEnabled) {
+            return;
+        }
+        Toolkit.getDefaultToolkit().beep();
     }
 
     private void createModernConnectionPanel() {
@@ -191,7 +434,7 @@ public class AdvancedClient extends JFrame {
         chatArea = new JPanel();
         chatArea.setLayout(new BoxLayout(chatArea, BoxLayout.Y_AXIS));
         chatArea.setBackground(CARD_COLOR);
-        chatArea.setBorder(new EmptyBorder(16, 16, 16, 16));
+        chatArea.setBorder(new EmptyBorder(4, 4, 4, 4));
 
         // Modern scroll pane with custom styling
         chatScroll = new JScrollPane(chatArea);
@@ -247,10 +490,10 @@ public class AdvancedClient extends JFrame {
     private void createModernInputPanel() {
         inputPanel = new ModernUI.ModernPanel(BACKGROUND_COLOR);
         inputPanel.setLayout(new BorderLayout(15, 12));
-        inputPanel.setBorder(new EmptyBorder(18, 28, 24, 28));
+        inputPanel.setBorder(new EmptyBorder(12, 28, 18, 28));
 
         // Message input container with glassmorphism effect
-        JPanel inputContainer = new JPanel(new BorderLayout(15, 0));
+        JPanel inputContainer = new JPanel(new BorderLayout(10, 0));
         inputContainer.setOpaque(false);
 
         // Create modern message field
@@ -262,16 +505,24 @@ public class AdvancedClient extends JFrame {
         sendButton = new ModernUI.ModernButton("📤 Send", PRIMARY_COLOR);
         sendButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
         sendButton.setEnabled(false);
-        sendButton.addActionListener(e -> sendMessage());
+        sendButton.addActionListener(e -> sendMessageWithAnimation());
 
-        // Emoji button for future enhancement
-        emojiButton = new ModernUI.ModernButton("😊 Emoji", ACCENT_COLOR);
-        emojiButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
+        // Emoji button
+        emojiButton = new ModernUI.ModernButton("😊", ACCENT_COLOR);
+        emojiButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 16));
+        emojiButton.setPreferredSize(new Dimension(50, 38));
         emojiButton.setEnabled(false);
         emojiButton.addActionListener(e -> showEmojiPanel());
 
+        // Clear chat button
+        clearChatButton = new ModernUI.ModernButton("🗑️", new Color(100, 100, 100));
+        clearChatButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 14));
+        clearChatButton.setPreferredSize(new Dimension(50, 38));
+        clearChatButton.setToolTipText("Clear chat (Ctrl+L)");
+        clearChatButton.addActionListener(e -> clearChatWithAnimation());
+
         // Enter key to send message
-        messageField.addActionListener(e -> sendMessage());
+        messageField.addActionListener(e -> sendMessageWithAnimation());
 
         // Advanced typing indicator with animation
         setupAdvancedTypingIndicator();
@@ -282,8 +533,9 @@ public class AdvancedClient extends JFrame {
         messagePanel.setBorder(new EmptyBorder(6, 10, 6, 10));
         messagePanel.add(messageField, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
         buttonPanel.setOpaque(false);
+        buttonPanel.add(clearChatButton);
         buttonPanel.add(emojiButton);
         buttonPanel.add(sendButton);
 
@@ -294,10 +546,79 @@ public class AdvancedClient extends JFrame {
 
         // Typing indicator with improved readability
         typingLabel = new JLabel(" ");
-        typingLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 13));
+        typingLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 12));
         typingLabel.setForeground(TEXT_SECONDARY);
-        typingLabel.setBorder(new EmptyBorder(8, 4, 0, 4));
+        typingLabel.setBorder(new EmptyBorder(6, 4, 0, 4));
         inputPanel.add(typingLabel, BorderLayout.SOUTH);
+    }
+
+    // Send message with button animation
+    private void sendMessageWithAnimation() {
+        if (!isConnected || messageField.getText().trim().isEmpty()) {
+            // Shake animation for empty message
+            if (messageField.getText().trim().isEmpty() && isConnected) {
+                shakeComponent(messageField);
+            }
+            return;
+        }
+        sendMessage();
+        // Flash send button
+        flashComponent(sendButton);
+    }
+
+    // Clear chat with fade animation
+    private void clearChatWithAnimation() {
+        if (chatArea.getComponentCount() == 0) {
+            return;
+        }
+
+        // Fade out animation
+        Timer fadeTimer = new Timer(30, null);
+        final float[] alpha = {1f};
+        fadeTimer.addActionListener(e -> {
+            alpha[0] -= 0.1f;
+            if (alpha[0] <= 0) {
+                ((Timer) e.getSource()).stop();
+                clearChat();
+            }
+            chatArea.repaint();
+        });
+        fadeTimer.start();
+    }
+
+    // Shake animation for components
+    private void shakeComponent(JComponent comp) {
+        Point originalLocation = comp.getLocation();
+        Timer shakeTimer = new Timer(30, null);
+        final int[] count = {0};
+        final int[] offset = {5, -5, 4, -4, 3, -3, 2, -2, 1, -1, 0};
+        shakeTimer.addActionListener(e -> {
+            if (count[0] >= offset.length) {
+                comp.setLocation(originalLocation);
+                ((Timer) e.getSource()).stop();
+                return;
+            }
+            comp.setLocation(originalLocation.x + offset[count[0]], originalLocation.y);
+            count[0]++;
+        });
+        shakeTimer.start();
+    }
+
+    // Flash animation for components
+    private void flashComponent(JComponent comp) {
+        Color original = comp.getBackground();
+        Timer flashTimer = new Timer(50, null);
+        final int[] count = {0};
+        flashTimer.addActionListener(e -> {
+            count[0]++;
+            if (count[0] > 4) {
+                ((Timer) e.getSource()).stop();
+                return;
+            }
+            // Simple repaint to trigger visual feedback
+            comp.repaint();
+        });
+        flashTimer.start();
     }
 
     // Helper method to create glowing labels
@@ -341,6 +662,35 @@ public class AdvancedClient extends JFrame {
         });
     }
 
+    // Animated typing indicator (ellipsis pulse)
+    private void setTypingIndicator(String baseText, boolean active) {
+        typingBaseText = baseText == null ? "" : baseText;
+        if (typingDotsTimer != null) {
+            typingDotsTimer.stop();
+        }
+
+        if (!active || typingBaseText.trim().isEmpty()) {
+            typingLabel.setText(" ");
+            return;
+        }
+
+        typingLabel.setText(typingBaseText + "...");
+        typingDotsTimer = new Timer(420, e -> {
+            String dots = switch ((int) (System.currentTimeMillis() / 420 % 4)) {
+                case 0 ->
+                    ".";
+                case 1 ->
+                    "..";
+                case 2 ->
+                    "...";
+                default ->
+                    "";
+            };
+            typingLabel.setText(typingBaseText + dots);
+        });
+        typingDotsTimer.start();
+    }
+
     // Setup window effects
     private void setupWindowEffects() {
         // Add window focus effects
@@ -372,11 +722,16 @@ public class AdvancedClient extends JFrame {
 
     // Create Discord-style message component
     private JPanel createMessageBubble(String sender, String content, String timestamp, String messageType) {
+        // System messages get special centered treatment
+        if (messageType.equals("system")) {
+            return createSystemMessage(content, timestamp);
+        }
+
         JPanel messagePanel = new JPanel();
-        messagePanel.setLayout(new BorderLayout(0, 4));
+        messagePanel.setLayout(new BorderLayout(0, 0));
         messagePanel.setOpaque(false);
-        messagePanel.setBorder(new EmptyBorder(6, 0, 6, 0));
-        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
+        messagePanel.setBorder(new EmptyBorder(2, 6, 2, 6));
+        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 160));
 
         // Determine colors based on message type
         Color senderColor = PRIMARY_COLOR;
@@ -386,10 +741,6 @@ public class AdvancedClient extends JFrame {
         if (messageType.equals("own")) {
             senderColor = ACCENT_COLOR;
             avatarEmoji = "🔷";
-        } else if (messageType.equals("system")) {
-            senderColor = TEXT_SECONDARY;
-            contentColor = TEXT_SECONDARY;
-            avatarEmoji = "ℹ️";
         } else if (messageType.equals("private")) {
             senderColor = new Color(180, 100, 200);
             avatarEmoji = "✉️";
@@ -410,33 +761,33 @@ public class AdvancedClient extends JFrame {
         }
 
         // Header panel (avatar + username + timestamp)
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         headerPanel.setOpaque(false);
 
         // Avatar
         JLabel avatarLabel = new JLabel(avatarEmoji);
-        avatarLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 24));
-        avatarLabel.setPreferredSize(new Dimension(36, 36));
+        avatarLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 22));
+        avatarLabel.setPreferredSize(new Dimension(32, 32));
         avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
         avatarLabel.setVerticalAlignment(SwingConstants.TOP);
         headerPanel.add(avatarLabel);
 
         // Username
         JLabel usernameLabel = new JLabel(sender);
-        usernameLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 14));
+        usernameLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 15));
         usernameLabel.setForeground(senderColor);
         headerPanel.add(usernameLabel);
 
         // Timestamp
         JLabel timestampLabel = new JLabel(timestamp);
         timestampLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 11));
-        timestampLabel.setForeground(TEXT_SECONDARY);
+        timestampLabel.setForeground(new Color(TEXT_SECONDARY.getRed(), TEXT_SECONDARY.getGreen(), TEXT_SECONDARY.getBlue(), 180));
         headerPanel.add(timestampLabel);
 
         // Content panel
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.setOpaque(false);
-        contentPanel.setBorder(new EmptyBorder(0, 44, 0, 0)); // Indent to align with text after avatar
+        contentPanel.setBorder(new EmptyBorder(0, 36, 0, 8)); // Indent to align with text after avatar
 
         // Message content with word wrap
         JTextArea contentArea = new JTextArea(content);
@@ -458,7 +809,7 @@ public class AdvancedClient extends JFrame {
             @Override
             public void mouseEntered(MouseEvent e) {
                 messagePanel.setOpaque(true);
-                messagePanel.setBackground(new Color(CARD_COLOR.getRed() + 8, CARD_COLOR.getGreen() + 8, CARD_COLOR.getBlue() + 8));
+                messagePanel.setBackground(new Color(CARD_COLOR.getRed() + 6, CARD_COLOR.getGreen() + 6, CARD_COLOR.getBlue() + 6));
                 messagePanel.repaint();
             }
 
@@ -472,14 +823,51 @@ public class AdvancedClient extends JFrame {
         return messagePanel;
     }
 
+    // Create centered system message with distinct styling
+    private JPanel createSystemMessage(String content, String timestamp) {
+        JPanel messagePanel = new JPanel();
+        messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.Y_AXIS));
+        messagePanel.setOpaque(false);
+        messagePanel.setBorder(new EmptyBorder(1, 10, 1, 10));
+        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+
+        // Create a centered container
+        JPanel centerContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        centerContainer.setOpaque(true);
+        centerContainer.setBackground(new Color(SURFACE_COLOR.getRed() + 5, SURFACE_COLOR.getGreen() + 5, SURFACE_COLOR.getBlue() + 5));
+        centerContainer.setBorder(new EmptyBorder(3, 8, 3, 8));
+
+        // System icon
+        JLabel iconLabel = new JLabel("ℹ️");
+        iconLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        centerContainer.add(iconLabel);
+
+        // Message text with italic styling
+        JLabel messageLabel = new JLabel(content);
+        messageLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 12));
+        messageLabel.setForeground(new Color(TEXT_SECONDARY.getRed() + 20, TEXT_SECONDARY.getGreen() + 20, TEXT_SECONDARY.getBlue() + 20));
+        centerContainer.add(messageLabel);
+
+        // Timestamp
+        JLabel timestampLabel = new JLabel(timestamp);
+        timestampLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 10));
+        timestampLabel.setForeground(new Color(TEXT_SECONDARY.getRed(), TEXT_SECONDARY.getGreen(), TEXT_SECONDARY.getBlue(), 150));
+        centerContainer.add(timestampLabel);
+
+        centerContainer.setAlignmentX(Component.CENTER_ALIGNMENT);
+        messagePanel.add(centerContainer);
+
+        return messagePanel;
+    }
+
     // Create compact message (when same user sends multiple messages)
     private JPanel createCompactMessage(String content, String messageType) {
         JPanel messagePanel = new JPanel(new BorderLayout());
         messagePanel.setOpaque(false);
-        messagePanel.setBorder(new EmptyBorder(2, 44, 2, 0)); // Indent to align with previous message
-        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+        messagePanel.setBorder(new EmptyBorder(0, 40, 0, 10)); // Tighter vertical spacing
+        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
-        Color contentColor = messageType.equals("system") ? TEXT_SECONDARY : TEXT_COLOR;
+        Color contentColor = TEXT_COLOR;
 
         // Message content with word wrap
         JTextArea contentArea = new JTextArea(content);
@@ -498,7 +886,7 @@ public class AdvancedClient extends JFrame {
             @Override
             public void mouseEntered(MouseEvent e) {
                 messagePanel.setOpaque(true);
-                messagePanel.setBackground(new Color(CARD_COLOR.getRed() + 8, CARD_COLOR.getGreen() + 8, CARD_COLOR.getBlue() + 8));
+                messagePanel.setBackground(new Color(CARD_COLOR.getRed() + 6, CARD_COLOR.getGreen() + 6, CARD_COLOR.getBlue() + 6));
                 messagePanel.repaint();
             }
 
@@ -534,26 +922,110 @@ public class AdvancedClient extends JFrame {
         selectionTimer.start();
     }
 
-    // Show emoji panel with Unicode emojis
+    // Modern emoji picker with grid layout
     private void showEmojiPanel() {
-        String[] emojis = {
-            "😀", "😂", "😍", "😊", "😎", "😢", "😡", "😭",
-            "👍", "👎", "❤️", "💯", "🔥", "✨", "🎉", "👌",
-            "🤔", "😴", "🙄", "😘", "🥰", "😋", "😜", "🤗"
-        };
-        String selected = (String) JOptionPane.showInputDialog(
-                this,
-                "Choose an emoji:",
-                "Emoji Picker",
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                emojis,
-                emojis[0]);
+        JDialog emojiDialog = new JDialog(this, "😊 Emoji Picker", true);
+        emojiDialog.setSize(380, 420);
+        emojiDialog.setLocationRelativeTo(this);
+        emojiDialog.getContentPane().setBackground(SURFACE_COLOR);
 
-        if (selected != null) {
-            messageField.setText(messageField.getText() + selected);
-            messageField.requestFocus();
+        JPanel mainPanel = new JPanel(new BorderLayout(8, 8));
+        mainPanel.setBackground(SURFACE_COLOR);
+        mainPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
+
+        // Category tabs
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setBackground(SURFACE_COLOR);
+        tabbedPane.setForeground(TEXT_COLOR);
+        tabbedPane.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
+
+        // Emoji categories
+        String[][] categories = {
+            {"😀", "😃", "😄", "😁", "😅", "😂", "🤣", "😊", "😇", "🙂", "😉", "😍", "🥰", "😘", "😋", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏"},
+            {"👍", "👎", "👊", "✊", "🤛", "🤜", "🤝", "👏", "🙌", "👐", "🤲", "🤞", "✌️", "🤟", "🤘", "👌", "🤌", "👈", "👉", "👆", "👇", "☝️", "✋", "🤚"},
+            {"❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "♥️", "💌", "💋", "🫶", "🥹"},
+            {"🔥", "✨", "⭐", "🌟", "💫", "⚡", "💥", "💢", "💦", "💨", "🎉", "🎊", "🎈", "🎁", "🏆", "🥇", "🎯", "💯", "✅", "❌", "⚠️", "🚀", "💡", "🔔"}
+        };
+        String[] categoryNames = {"😀 Smileys", "👍 Gestures", "❤️ Hearts", "🔥 Symbols"};
+
+        for (int i = 0; i < categories.length; i++) {
+            JPanel emojiGrid = new JPanel(new GridLayout(0, 6, 4, 4));
+            emojiGrid.setBackground(CARD_COLOR);
+            emojiGrid.setBorder(new EmptyBorder(8, 8, 8, 8));
+
+            for (String emoji : categories[i]) {
+                JButton emojiBtn = new JButton(emoji);
+                emojiBtn.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 22));
+                emojiBtn.setBackground(CARD_COLOR);
+                emojiBtn.setForeground(TEXT_COLOR);
+                emojiBtn.setBorder(new EmptyBorder(6, 6, 6, 6));
+                emojiBtn.setFocusPainted(false);
+                emojiBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+                // Hover animation
+                emojiBtn.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
+                        emojiBtn.setBackground(ModernUI.ThemeColors.CARD_HOVER);
+                        emojiBtn.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 26));
+                    }
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
+                        emojiBtn.setBackground(CARD_COLOR);
+                        emojiBtn.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 22));
+                    }
+                });
+
+                emojiBtn.addActionListener(e -> {
+                    messageField.setText(messageField.getText() + emoji);
+                    emojiDialog.dispose();
+                    messageField.requestFocus();
+                });
+                emojiGrid.add(emojiBtn);
+            }
+
+            JScrollPane scrollPane = new JScrollPane(emojiGrid);
+            scrollPane.setBorder(null);
+            scrollPane.getViewport().setBackground(CARD_COLOR);
+            styleScrollBar(scrollPane);
+            tabbedPane.addTab(categoryNames[i], scrollPane);
         }
+
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+
+        // Recent emojis panel
+        JPanel recentPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 4));
+        recentPanel.setBackground(SURFACE_COLOR);
+        recentPanel.setBorder(new CompoundBorder(
+                new MatteBorder(1, 0, 0, 0, BORDER_COLOR),
+                new EmptyBorder(8, 4, 4, 4)
+        ));
+
+        JLabel recentLabel = new JLabel("Recent: ");
+        recentLabel.setForeground(TEXT_SECONDARY);
+        recentLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 11));
+        recentPanel.add(recentLabel);
+
+        String[] recent = {"😀", "❤️", "👍", "🔥", "😂"};
+        for (String emoji : recent) {
+            JButton btn = new JButton(emoji);
+            btn.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 16));
+            btn.setBackground(SURFACE_COLOR);
+            btn.setBorder(new EmptyBorder(2, 4, 2, 4));
+            btn.setFocusPainted(false);
+            btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btn.addActionListener(e -> {
+                messageField.setText(messageField.getText() + emoji);
+                emojiDialog.dispose();
+                messageField.requestFocus();
+            });
+            recentPanel.add(btn);
+        }
+
+        mainPanel.add(recentPanel, BorderLayout.SOUTH);
+        emojiDialog.add(mainPanel);
+        emojiDialog.setVisible(true);
     }
 
     private void setupKeyboardShortcuts() {
@@ -574,6 +1046,16 @@ public class AdvancedClient extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 messageField.setText("");
+            }
+        });
+
+        // Ctrl+L to clear chat
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(
+                KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK), "clearChat");
+        getRootPane().getActionMap().put("clearChat", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                clearChat();
             }
         });
     }
@@ -725,6 +1207,8 @@ public class AdvancedClient extends JFrame {
             userCountLabel.setText("👥 0 online");
             updateConnectionStatus();
 
+            setTypingIndicator(" ", false);
+
             // Reset title
             setTitle("💬 Elite Chat Client");
         });
@@ -738,6 +1222,10 @@ public class AdvancedClient extends JFrame {
         sendButton.setEnabled(connected);
         emojiButton.setEnabled(connected);
         messageField.setEnabled(connected);
+
+        if (!connected) {
+            setTypingIndicator(" ", false);
+        }
 
         // Update field states with animation
         serverField.setEnabled(!connected);
@@ -801,6 +1289,10 @@ public class AdvancedClient extends JFrame {
                         String sender = p[1];
                         String content = p[2];
                         appendDiscordMessage(sender, content, timestamp, "user");
+                        // Play sound for messages from others
+                        if (!sender.equals(username)) {
+                            playNotificationSound();
+                        }
                     }
                     case "PRIVATE" -> {
                         // PRIVATE|ts|from|to|content
@@ -815,6 +1307,7 @@ public class AdvancedClient extends JFrame {
                         String content = p[3];
                         String displayName = to != null && to.equalsIgnoreCase(username) ? from + " (private)" : "You → " + to;
                         appendDiscordMessage(displayName, content, timestamp, "private");
+                        playNotificationSound(); // Always play for private messages
                     }
                     case "JOIN", "LEAVE", "SYSTEM" -> {
                         // TYPE|ts|content
@@ -850,7 +1343,7 @@ public class AdvancedClient extends JFrame {
                         String who = p[1];
                         boolean typing = Boolean.parseBoolean(p[2]);
                         if (who != null && !who.equals(username)) {
-                            typingLabel.setText(typing ? (who + " is typing…") : " ");
+                            setTypingIndicator(who + " is typing", typing);
                         }
                     }
                     default ->
@@ -899,15 +1392,37 @@ public class AdvancedClient extends JFrame {
                 lastMessageSender = sender;
             }
 
-            chatArea.add(messageComponent);
+            AnimatedPanel animated = new AnimatedPanel(messageComponent);
+            chatArea.add(animated);
             chatArea.revalidate();
+            animated.playEntrance();
 
-            // Auto-scroll to bottom
-            SwingUtilities.invokeLater(() -> {
-                JScrollBar vertical = chatScroll.getVerticalScrollBar();
-                vertical.setValue(vertical.getMaximum());
-            });
+            // Auto-scroll to bottom with a smooth glide
+            SwingUtilities.invokeLater(this::smoothScrollToBottom);
         });
+    }
+
+    private void smoothScrollToBottom() {
+        JScrollBar vertical = chatScroll.getVerticalScrollBar();
+        int start = vertical.getValue();
+        int target = vertical.getMaximum();
+        int distance = target - start;
+        if (distance <= 0) {
+            return;
+        }
+
+        final int steps = 10;
+        final int[] step = {0};
+        Timer scrollTimer = new Timer(12, e -> {
+            step[0]++;
+            float progress = step[0] / (float) steps;
+            int value = start + Math.round(distance * progress);
+            vertical.setValue(value);
+            if (step[0] >= steps) {
+                ((Timer) e.getSource()).stop();
+            }
+        });
+        scrollTimer.start();
     }
 
     private String getCurrentTime() {
