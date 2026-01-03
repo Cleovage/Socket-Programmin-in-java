@@ -6,7 +6,6 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import javax.swing.*;
 import javax.swing.border.*;
-import javax.swing.text.*;
 
 public class AdvancedClient extends JFrame {
 
@@ -16,31 +15,33 @@ public class AdvancedClient extends JFrame {
     private volatile boolean isConnected = false;
 
     // Modern UI Components
-    private JTextPane chatArea;
-    private ModernTextField messageField;
-    private ModernButton connectButton, sendButton, emojiButton;
+    private JPanel chatArea; // Changed to JPanel for Discord-style messages
+    private JScrollPane chatScroll;
+    private ModernUI.ModernTextField messageField;
+    private ModernUI.ModernButton connectButton, sendButton, emojiButton;
     private JList<String> userList;
     private DefaultListModel<String> userListModel;
     private JScrollPane userScroll;
-    private ModernPanel connectionPanel, chatPanel, inputPanel;
+    private ModernUI.ModernPanel connectionPanel, chatPanel, inputPanel;
     private JLabel statusLabel, userCountLabel;
     private JLabel typingLabel;
-    private ModernTextField serverField, portField, usernameField;
+    private ModernUI.ModernTextField serverField, portField, usernameField;
+    private String lastMessageSender = null; // Track last sender for grouping
 
     private String serverAddress = "localhost";
     private int serverPort = 12345;
     private String username = "Anonymous";
 
-    // Modern Dark Theme Color Scheme
-    private final Color PRIMARY_COLOR = new Color(88, 86, 214);
-    private final Color ACCENT_COLOR = new Color(255, 92, 88);
-    private final Color SUCCESS_COLOR = new Color(72, 187, 120);
-    private final Color BACKGROUND_COLOR = new Color(18, 18, 18);
-    private final Color SURFACE_COLOR = new Color(28, 28, 28);
-    private final Color CARD_COLOR = new Color(38, 38, 38);
-    private final Color TEXT_COLOR = new Color(240, 240, 240);
-    private final Color TEXT_SECONDARY = new Color(160, 160, 160);
-    private final Color BORDER_COLOR = new Color(58, 58, 58);
+    // Modern Dark Theme Color Scheme (from ModernUI.ThemeColors)
+    private final Color PRIMARY_COLOR = ModernUI.ThemeColors.PRIMARY;
+    private final Color ACCENT_COLOR = ModernUI.ThemeColors.ERROR;
+    private final Color SUCCESS_COLOR = ModernUI.ThemeColors.SUCCESS;
+    private final Color BACKGROUND_COLOR = ModernUI.ThemeColors.BACKGROUND;
+    private final Color SURFACE_COLOR = ModernUI.ThemeColors.SURFACE;
+    private final Color CARD_COLOR = ModernUI.ThemeColors.CARD;
+    private final Color TEXT_COLOR = ModernUI.ThemeColors.TEXT_PRIMARY;
+    private final Color TEXT_SECONDARY = ModernUI.ThemeColors.TEXT_SECONDARY;
+    private final Color BORDER_COLOR = ModernUI.ThemeColors.BORDER;
 
     public AdvancedClient() {
         initializeModernGUI();
@@ -71,6 +72,9 @@ public class AdvancedClient extends JFrame {
     }
 
     private void initializeModernGUI() {
+        // Setup modern look and feel
+        ModernUI.setupLookAndFeel();
+
         setTitle("[CLIENT] Elite Chat Client");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
@@ -97,21 +101,25 @@ public class AdvancedClient extends JFrame {
     }
 
     private void createModernConnectionPanel() {
-        connectionPanel = new ModernPanel(new BorderLayout(10, 0), SURFACE_COLOR, 0, false);
+        connectionPanel = new ModernUI.ModernPanel(SURFACE_COLOR);
+        connectionPanel.setLayout(new BorderLayout(10, 0));
         connectionPanel.setBorder(new EmptyBorder(18, 28, 18, 28));
 
-        // Initialize connection fields
-        serverField = new ModernTextField("localhost", 0, PRIMARY_COLOR, BORDER_COLOR);
-        serverField.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        // Initialize connection fields with ModernUI.ModernTextField
+        serverField = new ModernUI.ModernTextField("localhost");
+        serverField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
         serverField.setPreferredSize(new Dimension(140, 42));
+        serverField.setToolTipText("Enter server IP (e.g., 192.168.1.x for local network)");
 
-        portField = new ModernTextField("12345", 0, PRIMARY_COLOR, BORDER_COLOR);
-        portField.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        portField = new ModernUI.ModernTextField("12345");
+        portField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
         portField.setPreferredSize(new Dimension(100, 42));
+        portField.setToolTipText("Server port (default: 12345)");
 
-        usernameField = new ModernTextField("", 0, PRIMARY_COLOR, BORDER_COLOR);
-        usernameField.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        usernameField = new ModernUI.ModernTextField("Your name");
+        usernameField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
         usernameField.setPreferredSize(new Dimension(140, 42));
+        usernameField.setToolTipText("Your display name (leave empty for 'Anonymous')");
 
         // Left side - Connection controls with improved alignment
         JPanel leftPanel = new JPanel(new GridBagLayout());
@@ -124,7 +132,7 @@ public class AdvancedClient extends JFrame {
         gbc.gridx = 0;
         gbc.gridy = 0;
         JLabel serverLabel = createGlowLabel("🖥️ Server:", TEXT_COLOR);
-        serverLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
+        serverLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
         leftPanel.add(serverLabel, gbc);
         gbc.gridx = 1;
         leftPanel.add(serverField, gbc);
@@ -133,7 +141,7 @@ public class AdvancedClient extends JFrame {
         gbc.gridx = 2;
         gbc.gridy = 0;
         JLabel portLabelConn = createGlowLabel("🔌 Port:", TEXT_COLOR);
-        portLabelConn.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
+        portLabelConn.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
         leftPanel.add(portLabelConn, gbc);
         gbc.gridx = 3;
         leftPanel.add(portField, gbc);
@@ -142,7 +150,7 @@ public class AdvancedClient extends JFrame {
         gbc.gridx = 4;
         gbc.gridy = 0;
         JLabel usernameLabel = createGlowLabel("👤 Username:", TEXT_COLOR);
-        usernameLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 12));
+        usernameLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
         leftPanel.add(usernameLabel, gbc);
         gbc.gridx = 5;
         leftPanel.add(usernameField, gbc);
@@ -150,8 +158,8 @@ public class AdvancedClient extends JFrame {
         // Connect button
         gbc.gridx = 6;
         gbc.gridy = 0;
-        connectButton = new ModernButton("🔗 Connect", SUCCESS_COLOR);
-        connectButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        connectButton = new ModernUI.ModernButton("🔗 Connect", SUCCESS_COLOR);
+        connectButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
         connectButton.addActionListener(e -> toggleConnection());
         leftPanel.add(connectButton, gbc);
 
@@ -161,11 +169,11 @@ public class AdvancedClient extends JFrame {
 
         statusLabel = new JLabel("⚫ Offline");
         statusLabel.setForeground(TEXT_COLOR);
-        statusLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 16));
+        statusLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 16));
 
         userCountLabel = new JLabel("👥 0 online");
         userCountLabel.setForeground(TEXT_SECONDARY);
-        userCountLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        userCountLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
 
         rightPanel.add(userCountLabel);
         rightPanel.add(statusLabel);
@@ -175,25 +183,20 @@ public class AdvancedClient extends JFrame {
     }
 
     private void createModernChatPanel() {
-        chatPanel = new ModernPanel(new BorderLayout(15, 12), BACKGROUND_COLOR, 0, false);
+        chatPanel = new ModernUI.ModernPanel(BACKGROUND_COLOR);
+        chatPanel.setLayout(new BorderLayout(15, 12));
         chatPanel.setBorder(new EmptyBorder(18, 28, 18, 28));
 
-        // Modern chat area with improved readability
-        chatArea = new JTextPane();
-        chatArea.setEditable(false);
+        // Discord-style chat area with message bubbles
+        chatArea = new JPanel();
+        chatArea.setLayout(new BoxLayout(chatArea, BoxLayout.Y_AXIS));
         chatArea.setBackground(CARD_COLOR);
-        chatArea.setForeground(TEXT_COLOR);
-        chatArea.setFont(getEmojiCompatibleFont(Font.PLAIN, 15));
-        chatArea.setBorder(new EmptyBorder(25, 25, 25, 25));
-
-        // Custom document styling
-        StyledDocument doc = chatArea.getStyledDocument();
-        addAdvancedStylesToDocument(doc);
+        chatArea.setBorder(new EmptyBorder(16, 16, 16, 16));
 
         // Modern scroll pane with custom styling
-        JScrollPane chatScroll = new JScrollPane(chatArea);
+        chatScroll = new JScrollPane(chatArea);
         chatScroll.setBorder(new CompoundBorder(
-                BorderFactory.createTitledBorder("💬 Messages"),
+                new ModernUI.ModernTitledBorder("💬 Messages"),
                 new EmptyBorder(10, 10, 10, 10)));
         chatScroll.setBackground(CARD_COLOR);
         chatScroll.getViewport().setBackground(CARD_COLOR);
@@ -206,18 +209,17 @@ public class AdvancedClient extends JFrame {
         // Modern user list with improved readability
         userListModel = new DefaultListModel<>();
         userList = new JList<>(userListModel);
-        userList.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
-        userList.setFixedCellHeight(28);
+        userList.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
+        userList.setFixedCellHeight(32);
         userList.setBackground(CARD_COLOR);
         userList.setForeground(TEXT_COLOR);
-        userList.setSelectionBackground(new Color(88, 86, 214, 100));
-        userList.setSelectionForeground(Color.WHITE);
+        userList.setSelectionBackground(ModernUI.ThemeColors.TABLE_SELECTION);
+        userList.setSelectionForeground(TEXT_COLOR);
         userList.setBorder(new EmptyBorder(20, 20, 20, 20));
-        // userList.setCellRenderer(new DefaultListCellRenderer());
 
         userScroll = new JScrollPane(userList);
         userScroll.setBorder(new CompoundBorder(
-                BorderFactory.createTitledBorder("👥 Online (0)"),
+                new ModernUI.ModernTitledBorder("👥 Online (0)"),
                 new EmptyBorder(10, 10, 10, 10)));
         userScroll.setPreferredSize(new Dimension(240, 0));
         userScroll.setBackground(CARD_COLOR);
@@ -243,7 +245,8 @@ public class AdvancedClient extends JFrame {
     }
 
     private void createModernInputPanel() {
-        inputPanel = new ModernPanel(new BorderLayout(15, 12), BACKGROUND_COLOR, 0, false);
+        inputPanel = new ModernUI.ModernPanel(BACKGROUND_COLOR);
+        inputPanel.setLayout(new BorderLayout(15, 12));
         inputPanel.setBorder(new EmptyBorder(18, 28, 24, 28));
 
         // Message input container with glassmorphism effect
@@ -251,20 +254,19 @@ public class AdvancedClient extends JFrame {
         inputContainer.setOpaque(false);
 
         // Create modern message field
-        messageField = new ModernTextField("", 0, PRIMARY_COLOR, BORDER_COLOR);
-        messageField.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        messageField = new ModernUI.ModernTextField("Type your message...");
+        messageField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
         messageField.setEnabled(false);
-        messageField.setBorder(new EmptyBorder(12, 15, 12, 15));
 
         // Modern send button with glow effect
-        sendButton = new ModernButton("📤 Send", PRIMARY_COLOR);
-        sendButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        sendButton = new ModernUI.ModernButton("📤 Send", PRIMARY_COLOR);
+        sendButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
         sendButton.setEnabled(false);
         sendButton.addActionListener(e -> sendMessage());
 
         // Emoji button for future enhancement
-        emojiButton = new ModernButton("😊 Emoji", ACCENT_COLOR);
-        emojiButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        emojiButton = new ModernUI.ModernButton("😊 Emoji", ACCENT_COLOR);
+        emojiButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
         emojiButton.setEnabled(false);
         emojiButton.addActionListener(e -> showEmojiPanel());
 
@@ -275,9 +277,9 @@ public class AdvancedClient extends JFrame {
         setupAdvancedTypingIndicator();
 
         // Create input layout with better alignment
-        JPanel messagePanel = new JPanel(new BorderLayout());
-        messagePanel.setOpaque(false);
-        messagePanel.setBorder(new CompoundBorder(new LineBorder(CARD_COLOR, 2, true), new EmptyBorder(6, 10, 6, 10)));
+        ModernUI.ModernCard messagePanel = new ModernUI.ModernCard(CARD_COLOR, false);
+        messagePanel.setLayout(new BorderLayout());
+        messagePanel.setBorder(new EmptyBorder(6, 10, 6, 10));
         messagePanel.add(messageField, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
@@ -292,7 +294,7 @@ public class AdvancedClient extends JFrame {
 
         // Typing indicator with improved readability
         typingLabel = new JLabel(" ");
-        typingLabel.setFont(getEmojiCompatibleFont(Font.ITALIC, 13));
+        typingLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 13));
         typingLabel.setForeground(TEXT_SECONDARY);
         typingLabel.setBorder(new EmptyBorder(8, 4, 0, 4));
         inputPanel.add(typingLabel, BorderLayout.SOUTH);
@@ -364,35 +366,157 @@ public class AdvancedClient extends JFrame {
 
         vBar.setBackground(CARD_COLOR);
         hBar.setBackground(CARD_COLOR);
-        vBar.setUI(new ModernScrollBarUI());
-        hBar.setUI(new ModernScrollBarUI());
+        vBar.setUI(new ModernUI.ModernScrollBarUI());
+        hBar.setUI(new ModernUI.ModernScrollBarUI());
     }
 
-    // Add advanced document styling
-    private void addAdvancedStylesToDocument(StyledDocument doc) {
-        Style def = StyleContext.getDefaultStyleContext().getStyle(StyleContext.DEFAULT_STYLE);
+    // Create Discord-style message component
+    private JPanel createMessageBubble(String sender, String content, String timestamp, String messageType) {
+        JPanel messagePanel = new JPanel();
+        messagePanel.setLayout(new BorderLayout(0, 4));
+        messagePanel.setOpaque(false);
+        messagePanel.setBorder(new EmptyBorder(6, 0, 6, 0));
+        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
 
-        Style regular = doc.addStyle("regular", def);
-        StyleConstants.setFontFamily(regular, "Segoe UI");
-        StyleConstants.setFontSize(regular, 15);
-        StyleConstants.setForeground(regular, TEXT_COLOR);
+        // Determine colors based on message type
+        Color senderColor = PRIMARY_COLOR;
+        Color contentColor = TEXT_COLOR;
+        String avatarEmoji = "👤";
 
-        Style system = doc.addStyle("system", regular);
-        StyleConstants.setForeground(system, TEXT_SECONDARY);
-        StyleConstants.setItalic(system, true);
-        StyleConstants.setFontSize(system, 14);
+        if (messageType.equals("own")) {
+            senderColor = ACCENT_COLOR;
+            avatarEmoji = "🔷";
+        } else if (messageType.equals("system")) {
+            senderColor = TEXT_SECONDARY;
+            contentColor = TEXT_SECONDARY;
+            avatarEmoji = "ℹ️";
+        } else if (messageType.equals("private")) {
+            senderColor = new Color(180, 100, 200);
+            avatarEmoji = "✉️";
+        } else {
+            // Assign color based on sender name hash for consistency
+            int hash = sender.hashCode();
+            Color[] userColors = {
+                new Color(88, 101, 242),
+                new Color(67, 181, 129),
+                new Color(250, 166, 26),
+                new Color(237, 66, 69),
+                new Color(155, 89, 182),
+                new Color(26, 188, 156),
+                new Color(241, 196, 15)
+            };
+            senderColor = userColors[Math.abs(hash) % userColors.length];
+            avatarEmoji = getAvatarForUser(sender);
+        }
 
-        Style user = doc.addStyle("user", regular);
-        StyleConstants.setForeground(user, PRIMARY_COLOR);
-        StyleConstants.setBold(user, true);
+        // Header panel (avatar + username + timestamp)
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        headerPanel.setOpaque(false);
 
-        Style ownMessage = doc.addStyle("own", regular);
-        StyleConstants.setForeground(ownMessage, ACCENT_COLOR);
-        StyleConstants.setBold(ownMessage, true);
+        // Avatar
+        JLabel avatarLabel = new JLabel(avatarEmoji);
+        avatarLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 24));
+        avatarLabel.setPreferredSize(new Dimension(36, 36));
+        avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        avatarLabel.setVerticalAlignment(SwingConstants.TOP);
+        headerPanel.add(avatarLabel);
 
-        Style timestamp = doc.addStyle("timestamp", regular);
-        StyleConstants.setForeground(timestamp, TEXT_SECONDARY);
-        StyleConstants.setFontSize(timestamp, 13);
+        // Username
+        JLabel usernameLabel = new JLabel(sender);
+        usernameLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 14));
+        usernameLabel.setForeground(senderColor);
+        headerPanel.add(usernameLabel);
+
+        // Timestamp
+        JLabel timestampLabel = new JLabel(timestamp);
+        timestampLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 11));
+        timestampLabel.setForeground(TEXT_SECONDARY);
+        headerPanel.add(timestampLabel);
+
+        // Content panel
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setOpaque(false);
+        contentPanel.setBorder(new EmptyBorder(0, 44, 0, 0)); // Indent to align with text after avatar
+
+        // Message content with word wrap
+        JTextArea contentArea = new JTextArea(content);
+        contentArea.setEditable(false);
+        contentArea.setLineWrap(true);
+        contentArea.setWrapStyleWord(true);
+        contentArea.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
+        contentArea.setForeground(contentColor);
+        contentArea.setBackground(CARD_COLOR);
+        contentArea.setBorder(null);
+        contentArea.setOpaque(false);
+        contentPanel.add(contentArea, BorderLayout.CENTER);
+
+        messagePanel.add(headerPanel, BorderLayout.NORTH);
+        messagePanel.add(contentPanel, BorderLayout.CENTER);
+
+        // Add hover effect
+        messagePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                messagePanel.setOpaque(true);
+                messagePanel.setBackground(new Color(CARD_COLOR.getRed() + 8, CARD_COLOR.getGreen() + 8, CARD_COLOR.getBlue() + 8));
+                messagePanel.repaint();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                messagePanel.setOpaque(false);
+                messagePanel.repaint();
+            }
+        });
+
+        return messagePanel;
+    }
+
+    // Create compact message (when same user sends multiple messages)
+    private JPanel createCompactMessage(String content, String messageType) {
+        JPanel messagePanel = new JPanel(new BorderLayout());
+        messagePanel.setOpaque(false);
+        messagePanel.setBorder(new EmptyBorder(2, 44, 2, 0)); // Indent to align with previous message
+        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
+
+        Color contentColor = messageType.equals("system") ? TEXT_SECONDARY : TEXT_COLOR;
+
+        // Message content with word wrap
+        JTextArea contentArea = new JTextArea(content);
+        contentArea.setEditable(false);
+        contentArea.setLineWrap(true);
+        contentArea.setWrapStyleWord(true);
+        contentArea.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
+        contentArea.setForeground(contentColor);
+        contentArea.setBackground(CARD_COLOR);
+        contentArea.setBorder(null);
+        contentArea.setOpaque(false);
+        messagePanel.add(contentArea, BorderLayout.CENTER);
+
+        // Add hover effect
+        messagePanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                messagePanel.setOpaque(true);
+                messagePanel.setBackground(new Color(CARD_COLOR.getRed() + 8, CARD_COLOR.getGreen() + 8, CARD_COLOR.getBlue() + 8));
+                messagePanel.repaint();
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                messagePanel.setOpaque(false);
+                messagePanel.repaint();
+            }
+        });
+
+        return messagePanel;
+    }
+
+    // Get consistent avatar emoji for each user
+    private String getAvatarForUser(String username) {
+        String[] avatars = {"👤", "😀", "😎", "🤖", "👻", "🦊", "🐱", "🐶", "🐼", "🦁", "🐯", "🐸"};
+        int index = Math.abs(username.hashCode()) % avatars.length;
+        return avatars[index];
     }
 
     // Animation for user selection
@@ -471,13 +595,13 @@ public class AdvancedClient extends JFrame {
 
                     // Connection dropped (readLine returned null)
                     if (isConnected) {
-                        SwingUtilities.invokeLater(() -> appendToChat("Connection lost to server\n", "system"));
+                        SwingUtilities.invokeLater(() -> appendDiscordMessage("System", "Connection lost to server", getCurrentTime(), "system"));
                         disconnectFromServer();
                     }
                 } catch (IOException e) {
                     if (isConnected) {
-                        SwingUtilities.invokeLater(() -> appendToChat(
-                                "Error reading from server: " + e.getMessage() + "\n", "system"));
+                        SwingUtilities.invokeLater(() -> appendDiscordMessage("System",
+                                "Error reading from server: " + e.getMessage(), getCurrentTime(), "system"));
                         disconnectFromServer();
                     }
                 } catch (InterruptedException e) {
@@ -527,7 +651,7 @@ public class AdvancedClient extends JFrame {
                 statusLabel.setText("🟢 Connected as " + username);
                 // statusLabel.stopPulse();
                 setTitle("💬 Elite Chat Client - " + username);
-                appendToChat("✨ Welcome! Connected as " + username + "\n", "system");
+                appendDiscordMessage("System", "✨ Welcome! Connected as " + username, getCurrentTime(), "system");
                 updateConnectionStatus();
 
                 // Celebration animation
@@ -596,7 +720,7 @@ public class AdvancedClient extends JFrame {
         SwingUtilities.invokeLater(() -> {
             statusLabel.setText("⚫ Offline");
             // statusLabel.stopPulse();
-            appendToChat("👋 You left the chat\n", "system");
+            appendDiscordMessage("System", "👋 You left the chat", getCurrentTime(), "system");
             userListModel.clear();
             userCountLabel.setText("👥 0 online");
             updateConnectionStatus();
@@ -670,54 +794,46 @@ public class AdvancedClient extends JFrame {
                         // CHAT|ts|sender|content
                         String[] p = rest.split("\\|", 3);
                         if (p.length < 3) {
-                            appendToChat("Server: " + message + "\n", "regular");
+                            appendDiscordMessage("Server", message, getCurrentTime(), "system");
                             return;
                         }
                         String timestamp = p[0];
                         String sender = p[1];
                         String content = p[2];
-                        appendToChat("[" + timestamp + "] " + sender + ": " + content + "\n", "user");
+                        appendDiscordMessage(sender, content, timestamp, "user");
                     }
                     case "PRIVATE" -> {
                         // PRIVATE|ts|from|to|content
                         String[] p = rest.split("\\|", 4);
                         if (p.length < 4) {
-                            appendToChat("Server: " + message + "\n", "regular");
+                            appendDiscordMessage("Server", message, getCurrentTime(), "system");
                             return;
                         }
                         String timestamp = p[0];
                         String from = p[1];
                         String to = p[2];
                         String content = p[3];
-                        String label = to != null && to.equalsIgnoreCase(username) ? "[PM]" : "[PM to " + to + "]";
-                        appendToChat("[" + timestamp + "] " + label + " " + from + ": " + content + "\n", "own");
+                        String displayName = to != null && to.equalsIgnoreCase(username) ? from + " (private)" : "You → " + to;
+                        appendDiscordMessage(displayName, content, timestamp, "private");
                     }
                     case "JOIN", "LEAVE", "SYSTEM" -> {
                         // TYPE|ts|content
                         String[] p = rest.split("\\|", 2);
                         if (p.length < 2) {
-                            appendToChat("Server: " + message + "\n", "regular");
+                            appendDiscordMessage("Server", message, getCurrentTime(), "system");
                             return;
                         }
                         String timestamp = p[0];
                         String content = p[1];
-                        String prefix = switch (messageType) {
+                        String displayText = switch (messageType) {
                             case "JOIN" ->
-                                "*** ";
+                                content + " joined the chat";
                             case "LEAVE" ->
-                                "*** ";
+                                content + " left the chat";
                             default ->
-                                "* ";
+                                content;
                         };
-                        String suffix = switch (messageType) {
-                            case "JOIN" ->
-                                " joined ***";
-                            case "LEAVE" ->
-                                " left ***";
-                            default ->
-                                "";
-                        };
-                        appendToChat("[" + timestamp + "] " + prefix + content + suffix + "\n", "system");
+                        appendDiscordMessage("System", displayText, timestamp, "system");
                     }
                     case "USERLIST" -> {
                         // USERLIST|ts|user1,user2,...
@@ -738,11 +854,11 @@ public class AdvancedClient extends JFrame {
                         }
                     }
                     default ->
-                        appendToChat("Server: " + message + "\n", "regular");
+                        appendDiscordMessage("Server", message, getCurrentTime(), "system");
                 }
             } catch (Exception e) {
                 // Fallback for any parsing errors
-                appendToChat("Server: " + message + "\n", "regular");
+                appendDiscordMessage("Server", message, getCurrentTime(), "system");
             }
         });
     }
@@ -762,21 +878,48 @@ public class AdvancedClient extends JFrame {
         userCountLabel.setText("👥 " + userListModel.size() + " online");
 
         // Update the user list title with count
-        if (userScroll != null && userScroll.getBorder() instanceof TitledBorder border) {
-            border.setTitle("👥 Online (" + userListModel.size() + ")");
-            userScroll.repaint();
+        if (userScroll != null && userScroll.getBorder() instanceof CompoundBorder cb) {
+            if (cb.getOutsideBorder() instanceof ModernUI.ModernTitledBorder border) {
+                border.setTitle("👥 Online (" + userListModel.size() + ")");
+                userScroll.repaint();
+            }
         }
     }
 
-    private void appendToChat(String text, String style) {
-        StyledDocument doc = chatArea.getStyledDocument();
-        try {
-            doc.insertString(doc.getLength(), text, doc.getStyle(style));
-            // Auto scroll to bottom
-            chatArea.setCaretPosition(doc.getLength());
-        } catch (BadLocationException e) {
-            // Ignore
-        }
+    private void appendDiscordMessage(String sender, String content, String timestamp, String messageType) {
+        SwingUtilities.invokeLater(() -> {
+            // Check if we should group with previous message (same sender, within short time)
+            boolean groupWithPrevious = sender.equals(lastMessageSender) && !messageType.equals("system");
+
+            JPanel messageComponent;
+            if (groupWithPrevious) {
+                messageComponent = createCompactMessage(content, messageType);
+            } else {
+                messageComponent = createMessageBubble(sender, content, timestamp, messageType);
+                lastMessageSender = sender;
+            }
+
+            chatArea.add(messageComponent);
+            chatArea.revalidate();
+
+            // Auto-scroll to bottom
+            SwingUtilities.invokeLater(() -> {
+                JScrollBar vertical = chatScroll.getVerticalScrollBar();
+                vertical.setValue(vertical.getMaximum());
+            });
+        });
+    }
+
+    private String getCurrentTime() {
+        java.time.LocalTime now = java.time.LocalTime.now();
+        return String.format("%02d:%02d", now.getHour(), now.getMinute());
+    }
+
+    private void clearChat() {
+        chatArea.removeAll();
+        lastMessageSender = null;
+        chatArea.revalidate();
+        chatArea.repaint();
     }
 
     private void sendTyping(boolean typing) {

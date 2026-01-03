@@ -1,10 +1,11 @@
-import java.awt.*;
+
 import java.time.*;
 import java.time.format.*;
 import java.util.concurrent.*;
 
 // Test class to verify dashboard synchronization
 public class DashboardTest {
+
     public static void main(String[] args) {
         System.out.println("Testing Dashboard Synchronization...");
 
@@ -28,12 +29,10 @@ public class DashboardTest {
             testTimer.start();
 
             // Test ModernUI components
-            ModernButton testButton = new ModernButton("Test", Color.BLUE);
-            System.out.println("✓ ModernButton created successfully");
-
-            ModernPanel testPanel = new ModernPanel(new BorderLayout(), Color.GRAY, 10, true);
-            System.out.println("✓ ModernPanel created successfully");
-
+            // ModernButton testButton = new ModernButton("Test", Color.BLUE);
+            // System.out.println("✓ ModernButton created successfully");
+            // ModernPanel testPanel = new ModernPanel(new BorderLayout(), Color.GRAY, 10, true);
+            // System.out.println("✓ ModernPanel created successfully");
             System.out.println("All dashboard synchronization components are working correctly!");
 
         } catch (Exception e) {

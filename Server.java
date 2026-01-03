@@ -28,7 +28,7 @@ public class Server extends JFrame {
     private JTextArea logArea;
 
     private JButton startButton, stopButton, clearLogButton, banUserButton;
-    private JLabel statusLabel, portLabel, uptimeLabel, clientCountLabel;
+    private JLabel statusLabel, portLabel, uptimeLabel, clientCountLabel, networkIPLabel;
     private JTable clientTable;
     private DefaultTableModel clientTableModel;
     private JProgressBar memoryBar;
@@ -52,16 +52,16 @@ public class Server extends JFrame {
     private long serverStartTime;
     private int totalConnectionsEver = 0;
 
-    // Modern Dark Theme Colors (matching AdvancedClient)
-    private Color primaryColor;
-    private Color accentColor;
-    private Color successColor;
-    private Color backgroundColor;
-    private Color surfaceColor;
-    private Color cardColor;
-    private Color textColor;
-    private Color textSecondary;
-    private Color borderColor;
+    // Modern Dark Theme Colors (from ModernUI.ThemeColors)
+    private final Color primaryColor = ModernUI.ThemeColors.PRIMARY;
+    private final Color accentColor = ModernUI.ThemeColors.ERROR;
+    private final Color successColor = ModernUI.ThemeColors.SUCCESS;
+    private final Color backgroundColor = ModernUI.ThemeColors.BACKGROUND;
+    private final Color surfaceColor = ModernUI.ThemeColors.SURFACE;
+    private final Color cardColor = ModernUI.ThemeColors.CARD;
+    private final Color textColor = ModernUI.ThemeColors.TEXT_PRIMARY;
+    private final Color textSecondary = ModernUI.ThemeColors.TEXT_SECONDARY;
+    private final Color borderColor = ModernUI.ThemeColors.BORDER;
 
     private DateTimeFormatter timeFormatter;
     private javax.swing.Timer uiUpdateTimer;
@@ -106,23 +106,43 @@ public class Server extends JFrame {
         return new Font("SansSerif", style, size);
     }
 
+    private String getLocalIPAddress() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                // Skip loopback and inactive interfaces
+                if (iface.isLoopback() || !iface.isUp()) {
+                    continue;
+                }
+
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    // Get IPv4 address only
+                    if (addr instanceof Inet4Address) {
+                        String ip = addr.getHostAddress();
+                        // Skip localhost
+                        if (!ip.startsWith("127.")) {
+                            return ip;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return "Unable to detect";
+        }
+        return "No network found";
+    }
+
     private void initializeGUI() {
         setTitle("🖥️ Advanced Chat Server - Control Panel");
         setUndecorated(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Initialize Modern Dark Theme Color Scheme (matching AdvancedClient)
-        this.primaryColor = new Color(88, 86, 214); // Purple
-        this.accentColor = new Color(255, 92, 88); // Red
-        this.successColor = new Color(72, 187, 120); // Green
-        this.backgroundColor = new Color(18, 18, 18); // Dark gray
-        this.surfaceColor = new Color(28, 28, 28); // Medium gray
-        this.cardColor = new Color(38, 38, 38); // Light gray
-        this.textColor = new Color(240, 240, 240); // White
-        this.textSecondary = new Color(160, 160, 160); // Light gray
-        this.borderColor = new Color(58, 58, 58); // Border
-
+        // Apply modern look and feel
+        ModernUI.setupLookAndFeel();
         getContentPane().setBackground(backgroundColor);
 
         // Create top toolbar
@@ -171,11 +191,17 @@ public class Server extends JFrame {
                     stopButton.setEnabled(true);
                     broadcastButton.setEnabled(true);
                     statusLabel.setText("🟢 Running on port " + selectedPort);
-                    statusLabel.setForeground(new Color(76, 175, 80));
+                    statusLabel.setForeground(new Color(100, 180, 120));
                     portLabel.setText("🔌 Port: " + selectedPort);
 
-                    String startMsg = "[" + LocalDateTime.now().format(timeFormatter) + "] [>] Server started on port "
-                            + selectedPort;
+                    String localIP = getLocalIPAddress();
+                    if (networkIPLabel != null) {
+                        networkIPLabel.setText("🌐 Network: " + localIP + ":" + selectedPort);
+                        networkIPLabel.setForeground(successColor);
+                    }
+
+                    String startMsg = "[" + LocalDateTime.now().format(timeFormatter) + "] [>] Server started on "
+                            + localIP + ":" + selectedPort;
                     addActivity(startMsg);
 
                     // Synchronize dashboard after server start
@@ -245,6 +271,10 @@ public class Server extends JFrame {
             broadcastButton.setEnabled(false);
             statusLabel.setText("⚫ Stopped");
             statusLabel.setForeground(textColor);
+            if (networkIPLabel != null) {
+                networkIPLabel.setText("🌐 Network: Offline");
+                networkIPLabel.setForeground(textSecondary);
+            }
             addActivity("[" + LocalDateTime.now().format(timeFormatter) + "] Server stopped");
 
             // Synchronize dashboard after server stop
@@ -495,60 +525,72 @@ public class Server extends JFrame {
     }
 
     private void createToolbar() {
-        ModernPanel toolbar = new ModernPanel(new BorderLayout(), backgroundColor, 0, false);
+        ModernUI.ModernPanel toolbar = new ModernUI.ModernPanel(backgroundColor);
+        toolbar.setLayout(new BorderLayout());
         toolbar.setBorder(new CompoundBorder(
                 new MatteBorder(0, 0, 2, 0, primaryColor),
                 new EmptyBorder(12, 18, 12, 18)));
 
         // Left side - Server controls with improved alignment
-        ModernPanel leftPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 12, 8), backgroundColor, 0, false);
-        leftPanel.setOpaque(false);
+        ModernUI.ModernPanel leftPanel = new ModernUI.ModernPanel(backgroundColor);
+        leftPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 12, 8));
 
-        startButton = new ModernButton("▶ Start", successColor);
-        startButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
-        stopButton = new ModernButton("⏹ Stop", accentColor);
-        stopButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
-        clearLogButton = new ModernButton("🗑 Clear", new Color(158, 158, 158));
-        clearLogButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        startButton = new ModernUI.ModernButton("▶ Start", successColor);
+        startButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
+        stopButton = new ModernUI.ModernButton("⏹ Stop", accentColor);
+        stopButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
+        clearLogButton = new ModernUI.ModernButton("🗑 Clear", ModernUI.ThemeColors.TEXT_DISABLED);
+        clearLogButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
 
         stopButton.setEnabled(false);
 
-        // Port selection with improved styling
-        portSpinner = new JSpinner(new SpinnerNumberModel(PORT, 1024, 65535, 1));
+        // Port selection with improved styling using ModernSpinner
+        portSpinner = new ModernUI.ModernSpinner(new SpinnerNumberModel(PORT, 1024, 65535, 1));
         portSpinner.setPreferredSize(new Dimension(110, 38));
-
-        // Apply dark theme to spinner
-        portSpinner.setBackground(cardColor);
-        portSpinner.setForeground(textColor);
-        portSpinner.setBorder(BorderFactory.createLineBorder(borderColor));
-        portSpinner.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
-        if (portSpinner.getEditor() instanceof JSpinner.DefaultEditor editor) {
-            JFormattedTextField tf = editor.getTextField();
-            tf.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
-            tf.setBackground(cardColor);
-            tf.setForeground(textColor);
-            tf.setCaretColor(textColor);
-            tf.setBorder(new EmptyBorder(6, 8, 6, 8));
-        }
 
         // Create local port label for toolbar
         JLabel toolbarPortLabel = new JLabel("🔌 Port:");
         toolbarPortLabel.setForeground(textColor);
-        toolbarPortLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        toolbarPortLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
 
         leftPanel.add(toolbarPortLabel);
         leftPanel.add(portSpinner);
         leftPanel.add(Box.createHorizontalStrut(15));
         leftPanel.add(startButton);
         leftPanel.add(stopButton);
-        leftPanel.add(clearLogButton); // Right side - Status indicators
-        ModernPanel rightPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8), backgroundColor, 0, false);
-        rightPanel.setOpaque(false);
+        leftPanel.add(clearLogButton);
+
+        // Right side - Status indicators
+        ModernUI.ModernPanel rightPanel = new ModernUI.ModernPanel(backgroundColor);
+        rightPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+
+        networkIPLabel = new JLabel("🌐 Network: Offline");
+        networkIPLabel.setForeground(textSecondary);
+        networkIPLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+        networkIPLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        networkIPLabel.setToolTipText("Click to copy network address");
+        networkIPLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                String text = networkIPLabel.getText();
+                if (text.contains(":")) {
+                    String address = text.substring(text.indexOf("Network: ") + 9);
+                    java.awt.datatransfer.StringSelection selection = new java.awt.datatransfer.StringSelection(address);
+                    java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+                    JOptionPane.showMessageDialog(Server.this,
+                            "Address copied: " + address + "\n\nShare this with clients to connect!",
+                            "Network Address Copied",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
 
         statusLabel = new JLabel("⚫ Offline");
         statusLabel.setForeground(textColor);
-        statusLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 14));
+        statusLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 14));
 
+        rightPanel.add(networkIPLabel);
+        rightPanel.add(Box.createHorizontalStrut(10));
         rightPanel.add(statusLabel);
 
         toolbar.add(leftPanel, BorderLayout.WEST);
@@ -569,63 +611,59 @@ public class Server extends JFrame {
 
     private void createTabbedInterface() {
         mainTabs = new JTabbedPane(JTabbedPane.TOP);
-        mainTabs.setFont(getEmojiCompatibleFont(Font.BOLD, 14));
+        mainTabs.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
 
         // Apply dark theme to tabbed pane
         mainTabs.setBackground(backgroundColor);
         mainTabs.setForeground(textColor);
-        mainTabs.setBorder(BorderFactory.createEmptyBorder());
+        mainTabs.setBorder(new EmptyBorder(8, 10, 0, 10));
 
         // Dashboard Tab
-        mainTabs.addTab("📊 Dashboard", createDashboardTab());
+        mainTabs.addTab("  📊  Dashboard  ", createDashboardTab());
 
         // Server Log Tab
-        mainTabs.addTab("📝 Logs", createLogTab());
+        mainTabs.addTab("  📝  Logs  ", createLogTab());
 
         // Client Management Tab
-        mainTabs.addTab("👥 Clients", createClientTab());
+        mainTabs.addTab("  👥  Clients  ", createClientTab());
 
         // Broadcast Tab
-        mainTabs.addTab("📢 Broadcast", createBroadcastTab());
+        mainTabs.addTab("  📢  Broadcast  ", createBroadcastTab());
 
         // Settings Tab
-        mainTabs.addTab("⚙️ Settings", createSettingsTab());
+        mainTabs.addTab("  ⚙️  Settings  ", createSettingsTab());
 
         add(mainTabs, BorderLayout.CENTER);
     }
 
     private JPanel createDashboardTab() {
-        ModernPanel dashboard = new ModernPanel(new BorderLayout(18, 18), backgroundColor, 0, false);
+        ModernUI.ModernPanel dashboard = new ModernUI.ModernPanel(backgroundColor);
+        dashboard.setLayout(new BorderLayout(18, 18));
         dashboard.setBorder(new EmptyBorder(20, 22, 20, 22));
-        dashboard.setBackground(backgroundColor);
 
         // Stats Panel
-        ModernPanel statsPanel = new ModernPanel(new GridLayout(2, 3, 15, 15), backgroundColor, 0, false);
-        statsPanel.setBackground(backgroundColor);
+        ModernUI.ModernPanel statsPanel = new ModernUI.ModernPanel(backgroundColor);
+        statsPanel.setLayout(new GridLayout(2, 3, 15, 15));
 
         // Create stat cards with references stored for updates using new color scheme
         statsPanel.add(createStatCard("👥 Connected", "0", primaryColor, "clients"));
         statsPanel.add(createStatCard("💬 Messages", "0", successColor, "messages"));
         statsPanel.add(createStatCard("⏱️ Uptime", "00:00:00", accentColor, "uptime"));
-        statsPanel.add(createStatCard("🔌 Port", String.valueOf(PORT), new Color(255, 152, 0), "port"));
-        statsPanel.add(createStatCard("💾 Memory", "0 MB", new Color(244, 67, 54), "memory"));
-        statsPanel.add(createStatCard("🔗 Total Connections", "0", new Color(0, 150, 136), "connections"));
+        statsPanel.add(createStatCard("🔌 Port", String.valueOf(PORT), new Color(200, 140, 60), "port"));
+        statsPanel.add(createStatCard("💾 Memory", "0 MB", new Color(200, 100, 100), "memory"));
+        statsPanel.add(createStatCard("🔗 Total Connections", "0", new Color(80, 160, 150), "connections"));
 
         dashboard.add(statsPanel, BorderLayout.NORTH);
 
         // Real-time activity feed
-        ModernPanel activityPanel = new ModernPanel(new BorderLayout(0, 10), cardColor, 8, true);
+        ModernUI.ModernCard activityPanel = new ModernUI.ModernCard(cardColor, false);
+        activityPanel.setLayout(new BorderLayout(0, 10));
         activityPanel.setBorder(new CompoundBorder(
-                BorderFactory.createTitledBorder(
-                        new LineBorder(borderColor),
-                        "🔴 Live Activity",
-                        TitledBorder.LEFT, TitledBorder.TOP,
-                        getEmojiCompatibleFont(Font.BOLD, 16)),
+                new ModernUI.ModernTitledBorder("🔴 Live Activity"),
                 new EmptyBorder(12, 12, 12, 12)));
-        activityPanel.setBackground(cardColor);
         dashboardActivityFeed = new JTextArea(15, 40);
         dashboardActivityFeed.setEditable(false);
-        dashboardActivityFeed.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        dashboardActivityFeed.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
         dashboardActivityFeed.setBackground(cardColor);
         dashboardActivityFeed.setForeground(textColor);
         dashboardActivityFeed.setBorder(new EmptyBorder(16, 16, 16, 16));
@@ -640,23 +678,23 @@ public class Server extends JFrame {
     }
 
     private JPanel createStatCard(String title, String value, Color color, String type) {
-        ModernPanel card = new ModernPanel(new BorderLayout(), cardColor, 8, true);
-        card.setBackground(cardColor);
+        ModernUI.ModernCard card = new ModernUI.ModernCard(cardColor, true);
+        card.setLayout(new BorderLayout());
         card.setBorder(new CompoundBorder(
-                new LineBorder(color, 2),
+                new ModernUI.RoundedBorder(color, ModernUI.CORNER_RADIUS, 2),
                 new EmptyBorder(15, 15, 15, 15)));
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        titleLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
         titleLabel.setForeground(textSecondary);
 
         JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 28));
+        valueLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 28));
         valueLabel.setForeground(color);
 
         // Add a small status indicator for real-time sync
         JLabel lastUpdated = new JLabel("Live");
-        lastUpdated.setFont(getEmojiCompatibleFont(Font.ITALIC, 12));
+        lastUpdated.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 12));
         lastUpdated.setForeground(textSecondary);
 
         JPanel labelPanel = new JPanel(new BorderLayout());
@@ -688,12 +726,16 @@ public class Server extends JFrame {
 
     private JPanel createLogTab() {
         JPanel logPanel = new JPanel(new BorderLayout(0, 12));
+        logPanel.setBackground(backgroundColor);
         logPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
         // Log controls
         JPanel logControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        logControls.setBackground(backgroundColor);
         autoScrollToggle = new JToggleButton("Auto-scroll", true);
-        autoScrollToggle.setFont(getEmojiCompatibleFont(Font.PLAIN, 12));
+        autoScrollToggle.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        autoScrollToggle.setBackground(cardColor);
+        autoScrollToggle.setForeground(textColor);
         logControls.add(autoScrollToggle);
 
         logPanel.add(logControls, BorderLayout.NORTH);
@@ -701,14 +743,16 @@ public class Server extends JFrame {
         // Log area
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
+        logArea.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
         logArea.setBackground(cardColor);
         logArea.setForeground(textColor);
         logArea.setBorder(new EmptyBorder(14, 14, 14, 14));
 
         JScrollPane logScroll = new JScrollPane(logArea);
-        logScroll.setBorder(null);
-        logScroll.getVerticalScrollBar().setUI(new ModernScrollBarUI());
+        logScroll.setBorder(new ModernUI.RoundedBorder(borderColor, ModernUI.CORNER_RADIUS, 1));
+        logScroll.setBackground(cardColor);
+        logScroll.getViewport().setBackground(cardColor);
+        logScroll.getVerticalScrollBar().setUI(new ModernUI.ModernScrollBarUI());
         logScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         logPanel.add(logScroll, BorderLayout.CENTER);
 
@@ -716,10 +760,11 @@ public class Server extends JFrame {
     }
 
     private JPanel createClientTab() {
-        ModernPanel clientPanel = new ModernPanel(new BorderLayout(0, 12), backgroundColor, 0, false);
+        ModernUI.ModernPanel clientPanel = new ModernUI.ModernPanel(backgroundColor);
+        clientPanel.setLayout(new BorderLayout(0, 12));
         clientPanel.setBorder(new EmptyBorder(16, 16, 16, 16));
 
-        // Client table
+        // Client table with ModernUI styling
         String[] columns = {"Username", "IP Address", "Connect Time", "Status", "Messages Sent"};
         clientTableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -729,26 +774,18 @@ public class Server extends JFrame {
         };
 
         clientTable = new JTable(clientTableModel);
-        clientTable.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
-        clientTable.setRowHeight(30);
-        clientTable.getTableHeader().setFont(getEmojiCompatibleFont(Font.BOLD, 13));
         clientTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        clientTable.setBackground(cardColor);
-        clientTable.setForeground(textColor);
-        clientTable.setGridColor(borderColor);
-        clientTable.getTableHeader().setBackground(cardColor);
-        clientTable.getTableHeader().setForeground(textColor);
 
-        JScrollPane clientScroll = new JScrollPane(clientTable);
-        clientScroll.setBorder(new EmptyBorder(6, 6, 6, 6));
-        clientScroll.getViewport().setBackground(cardColor);
+        // Use TableStyler for consistent styling
+        JScrollPane clientScroll = ModernUI.TableStyler.createStyledScrollPane(clientTable);
         clientPanel.add(clientScroll, BorderLayout.CENTER);
 
         // Client actions
-        ModernPanel actionPanel = new ModernPanel(new FlowLayout(FlowLayout.RIGHT, 12, 6), backgroundColor, 0, false);
+        ModernUI.ModernPanel actionPanel = new ModernUI.ModernPanel(backgroundColor);
+        actionPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 12, 6));
         actionPanel.setBorder(new EmptyBorder(6, 0, 0, 0));
-        banUserButton = new ModernButton("🚫 Kick", new Color(244, 67, 54));
-        banUserButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
+        banUserButton = new ModernUI.ModernButton("🚫 Kick", ModernUI.ThemeColors.ERROR);
+        banUserButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
         banUserButton.setEnabled(false);
         actionPanel.add(banUserButton);
 
@@ -770,30 +807,25 @@ public class Server extends JFrame {
     }
 
     private JPanel createBroadcastTab() {
-        ModernPanel broadcastPanel = new ModernPanel(new BorderLayout(0, 16), backgroundColor, 0, false);
+        ModernUI.ModernPanel broadcastPanel = new ModernUI.ModernPanel(backgroundColor);
+        broadcastPanel.setLayout(new BorderLayout(0, 16));
         broadcastPanel.setBorder(new EmptyBorder(20, 22, 20, 22));
 
         JLabel titleLabel = new JLabel("📢 Broadcast Message");
-        titleLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 18));
+        titleLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 18));
         titleLabel.setForeground(textColor);
         broadcastPanel.add(titleLabel, BorderLayout.NORTH);
 
-        ModernPanel inputPanel = new ModernPanel(new BorderLayout(12, 0), backgroundColor, 0, false);
+        ModernUI.ModernPanel inputPanel = new ModernUI.ModernPanel(backgroundColor);
+        inputPanel.setLayout(new BorderLayout(12, 0));
         inputPanel.setBorder(new EmptyBorder(18, 0, 0, 0));
 
-        broadcastField = new JTextField();
-        broadcastField.setFont(getEmojiCompatibleFont(Font.PLAIN, 14));
-        broadcastField.setBackground(cardColor);
-        broadcastField.setForeground(textColor);
-        broadcastField.setCaretColor(textColor);
-        broadcastField.setBorder(new CompoundBorder(
-                new LineBorder(borderColor),
-                new EmptyBorder(10, 10, 10, 10)));
+        ModernUI.ModernTextField modernBroadcastField = new ModernUI.ModernTextField("Type your broadcast message...");
+        modernBroadcastField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
+        broadcastField = modernBroadcastField;
 
-        broadcastButton = new ModernButton("📤 Send", primaryColor);
-        broadcastButton.setFont(getEmojiCompatibleFont(Font.BOLD, 13));
-        broadcastButton.setForeground(Color.WHITE);
-        broadcastButton.setBorder(new EmptyBorder(10, 18, 10, 18));
+        broadcastButton = new ModernUI.ModernButton("📤 Send", primaryColor);
+        broadcastButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
         broadcastButton.setEnabled(false);
 
         inputPanel.add(broadcastField, BorderLayout.CENTER);
@@ -818,34 +850,132 @@ public class Server extends JFrame {
     }
 
     private JPanel createSettingsTab() {
-        ModernPanel settingsPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 0, 0), backgroundColor, 0, false);
+        ModernUI.ModernPanel settingsPanel = new ModernUI.ModernPanel(backgroundColor);
         settingsPanel.setLayout(new BoxLayout(settingsPanel, BoxLayout.Y_AXIS));
         settingsPanel.setBorder(new EmptyBorder(20, 22, 20, 22));
 
         JLabel titleLabel = new JLabel("⚙️ Configuration");
-        titleLabel.setFont(getEmojiCompatibleFont(Font.BOLD, 18));
+        titleLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 18));
         titleLabel.setForeground(textColor);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         settingsPanel.add(titleLabel);
 
         settingsPanel.add(Box.createVerticalStrut(18));
 
-        // Log level setting
-        ModernPanel logLevelPanel = new ModernPanel(new FlowLayout(FlowLayout.LEFT, 10, 6), backgroundColor, 0, false);
-        logLevelPanel.setBorder(new EmptyBorder(4, 2, 12, 2));
-        JLabel logLevelLabel = new JLabel("Log Level:");
-        logLevelLabel.setFont(getEmojiCompatibleFont(Font.PLAIN, 13));
+        // Log level setting with ModernCard
+        ModernUI.ModernCard logLevelCard = new ModernUI.ModernCard(cardColor, false);
+        logLevelCard.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        logLevelCard.setBorder(new EmptyBorder(12, 16, 12, 16));
+        logLevelCard.setMaximumSize(new Dimension(500, 60));
+        JLabel logLevelLabel = new JLabel("📊 Log Level:");
+        logLevelLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
         logLevelLabel.setForeground(textColor);
         logLevelLabel.setBorder(new EmptyBorder(0, 0, 0, 6));
-        logLevelPanel.add(logLevelLabel);
+        logLevelCard.add(logLevelLabel);
         logLevelSlider = new JSlider(1, 5, 3);
         logLevelSlider.setMajorTickSpacing(1);
         logLevelSlider.setPaintTicks(true);
         logLevelSlider.setPaintLabels(true);
+        logLevelSlider.setBackground(cardColor);
+        logLevelSlider.setForeground(textColor);
         logLevelSlider.setBorder(new EmptyBorder(4, 4, 0, 4));
-        logLevelPanel.add(logLevelSlider);
-        logLevelPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        settingsPanel.add(logLevelPanel);
+        logLevelCard.add(logLevelSlider);
+        logLevelCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settingsPanel.add(logLevelCard);
+
+        settingsPanel.add(Box.createVerticalStrut(12));
+
+        // Auto-scroll toggle setting
+        ModernUI.ModernCard autoScrollCard = new ModernUI.ModernCard(cardColor, false);
+        autoScrollCard.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        autoScrollCard.setBorder(new EmptyBorder(12, 16, 12, 16));
+        autoScrollCard.setMaximumSize(new Dimension(500, 60));
+        JLabel autoScrollLabel = new JLabel("📜 Auto-scroll Logs:");
+        autoScrollLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+        autoScrollLabel.setForeground(textColor);
+        autoScrollCard.add(autoScrollLabel);
+        ModernUI.ModernToggleButton autoScrollToggleBtn = new ModernUI.ModernToggleButton(true);
+        autoScrollToggleBtn.addActionListener(e -> autoScrollToggle.setSelected(autoScrollToggleBtn.isOn()));
+        autoScrollCard.add(autoScrollToggleBtn);
+        autoScrollCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settingsPanel.add(autoScrollCard);
+
+        settingsPanel.add(Box.createVerticalStrut(12));
+
+        // Max clients setting
+        ModernUI.ModernCard maxClientsCard = new ModernUI.ModernCard(cardColor, false);
+        maxClientsCard.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        maxClientsCard.setBorder(new EmptyBorder(12, 16, 12, 16));
+        maxClientsCard.setMaximumSize(new Dimension(500, 60));
+        JLabel maxClientsLabel = new JLabel("👥 Max Clients:");
+        maxClientsLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+        maxClientsLabel.setForeground(textColor);
+        maxClientsCard.add(maxClientsLabel);
+        JSpinner maxClientsSpinner = new ModernUI.ModernSpinner(new SpinnerNumberModel(50, 1, 500, 1));
+        maxClientsSpinner.setPreferredSize(new Dimension(80, 32));
+        maxClientsCard.add(maxClientsSpinner);
+        maxClientsCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settingsPanel.add(maxClientsCard);
+
+        settingsPanel.add(Box.createVerticalStrut(12));
+
+        // Heartbeat interval setting
+        ModernUI.ModernCard heartbeatCard = new ModernUI.ModernCard(cardColor, false);
+        heartbeatCard.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        heartbeatCard.setBorder(new EmptyBorder(12, 16, 12, 16));
+        heartbeatCard.setMaximumSize(new Dimension(500, 60));
+        JLabel heartbeatLabel = new JLabel("💓 Heartbeat Interval (sec):");
+        heartbeatLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+        heartbeatLabel.setForeground(textColor);
+        heartbeatCard.add(heartbeatLabel);
+        JSpinner heartbeatSpinner = new ModernUI.ModernSpinner(new SpinnerNumberModel(30, 5, 120, 5));
+        heartbeatSpinner.setPreferredSize(new Dimension(80, 32));
+        heartbeatCard.add(heartbeatSpinner);
+        heartbeatCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settingsPanel.add(heartbeatCard);
+
+        settingsPanel.add(Box.createVerticalStrut(24));
+
+        // Server info section
+        JLabel infoTitle = new JLabel("ℹ️ Server Information");
+        infoTitle.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 16));
+        infoTitle.setForeground(textColor);
+        infoTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settingsPanel.add(infoTitle);
+
+        settingsPanel.add(Box.createVerticalStrut(12));
+
+        ModernUI.ModernCard infoCard = new ModernUI.ModernCard(cardColor, false);
+        infoCard.setLayout(new BoxLayout(infoCard, BoxLayout.Y_AXIS));
+        infoCard.setBorder(new EmptyBorder(16, 16, 16, 16));
+        infoCard.setMaximumSize(new Dimension(500, 150));
+
+        JLabel versionLabel = new JLabel("🔖 Version: 2.0.0 (Modern UI)");
+        versionLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        versionLabel.setForeground(textSecondary);
+        infoCard.add(versionLabel);
+        infoCard.add(Box.createVerticalStrut(6));
+
+        JLabel javaLabel = new JLabel("☕ Java: " + System.getProperty("java.version"));
+        javaLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        javaLabel.setForeground(textSecondary);
+        infoCard.add(javaLabel);
+        infoCard.add(Box.createVerticalStrut(6));
+
+        JLabel osLabel = new JLabel("💻 OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version"));
+        osLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        osLabel.setForeground(textSecondary);
+        infoCard.add(osLabel);
+        infoCard.add(Box.createVerticalStrut(6));
+
+        String localIP = getLocalIPAddress();
+        JLabel ipLabel = new JLabel("🌐 Local IP: " + localIP);
+        ipLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        ipLabel.setForeground(textSecondary);
+        infoCard.add(ipLabel);
+
+        infoCard.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settingsPanel.add(infoCard);
 
         return settingsPanel;
     }
@@ -867,7 +997,7 @@ public class Server extends JFrame {
         clientCountLabel.setForeground(textColor);
 
         // Apply consistent font styling with emoji support
-        Font statusFont = getEmojiCompatibleFont(Font.PLAIN, 13);
+        Font statusFont = ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13);
         portLabel.setFont(statusFont);
         uptimeLabel.setFont(statusFont);
         clientCountLabel.setFont(statusFont);
@@ -880,13 +1010,17 @@ public class Server extends JFrame {
         JPanel rightStatus = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         rightStatus.setOpaque(false);
 
-        memoryBar = new JProgressBar(0, 100);
+        // Use ModernProgressBar for memory display
+        ModernUI.ModernProgressBar modernMemoryBar = new ModernUI.ModernProgressBar(0, 100);
+        modernMemoryBar.setPreferredSize(new Dimension(150, 12));
+        modernMemoryBar.setProgressColor(primaryColor);
+        memoryBar = new JProgressBar(0, 100); // Keep reference for compatibility
         memoryBar.setStringPainted(true);
         memoryBar.setString("Memory: 0%");
         memoryBar.setPreferredSize(new Dimension(120, 20));
-        memoryBar.setBackground(cardColor); // Card color
+        memoryBar.setBackground(cardColor);
         memoryBar.setForeground(primaryColor);
-        memoryBar.setBorder(BorderFactory.createLineBorder(borderColor));
+        memoryBar.setBorder(new ModernUI.RoundedBorder(borderColor, 6, 1));
         rightStatus.add(memoryBar);
 
         statusBar.add(leftStatus, BorderLayout.WEST);
@@ -972,17 +1106,17 @@ public class Server extends JFrame {
     private void refreshDashboardVisuals() {
         // Update stat card colors based on server status
         if (dashboardClientCountLabel != null) {
-            Color clientColor = isRunning ? new Color(33, 150, 243) : new Color(158, 158, 158);
+            Color clientColor = isRunning ? new Color(88, 86, 214) : new Color(120, 120, 120);
             dashboardClientCountLabel.setForeground(clientColor);
         }
 
         if (dashboardUptimeLabel != null) {
-            Color uptimeColor = isRunning ? new Color(156, 39, 176) : new Color(158, 158, 158);
+            Color uptimeColor = isRunning ? new Color(255, 92, 88) : new Color(120, 120, 120);
             dashboardUptimeLabel.setForeground(uptimeColor);
         }
 
         if (dashboardPortLabel != null) {
-            Color portColor = isRunning ? new Color(76, 175, 80) : new Color(255, 152, 0);
+            Color portColor = isRunning ? new Color(100, 180, 120) : new Color(200, 140, 60);
             dashboardPortLabel.setForeground(portColor);
         }
     }
