@@ -113,9 +113,15 @@ public class Client extends JFrame {
     }
 
     private JPanel createConnectionPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(0, 0, 10, 0));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 5, 0, 5);
+        gbc.anchor = GridBagConstraints.CENTER;
 
         serverField = new ModernUI.ModernTextField("localhost");
         serverField.setPreferredSize(new Dimension(120, 35));
@@ -134,12 +140,17 @@ public class Client extends JFrame {
         statusLabel.setForeground(ModernUI.ThemeColors.TEXT_SECONDARY);
         statusLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
 
-        panel.add(serverField);
-        panel.add(portField);
-        panel.add(usernameField);
-        panel.add(connectButton);
-        panel.add(Box.createHorizontalStrut(10));
-        panel.add(statusLabel);
+        panel.add(serverField, gbc);
+        gbc.gridx++;
+        panel.add(portField, gbc);
+        gbc.gridx++;
+        panel.add(usernameField, gbc);
+        gbc.gridx++;
+        panel.add(connectButton, gbc);
+        gbc.gridx++;
+
+        gbc.insets = new Insets(0, 15, 0, 5);
+        panel.add(statusLabel, gbc);
 
         return panel;
     }

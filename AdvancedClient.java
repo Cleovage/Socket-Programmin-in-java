@@ -424,8 +424,14 @@ public class AdvancedClient extends JFrame {
         brandPanel.add(titlePanel);
 
         // Center - Connection fields in a compact row
-        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 4, 0, 4);
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.NONE;
 
         // Server field with label
         JPanel serverPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -439,6 +445,9 @@ public class AdvancedClient extends JFrame {
         serverPanel.add(serverLabel);
         serverPanel.add(serverField);
 
+        centerPanel.add(serverPanel, gbc);
+        gbc.gridx++;
+
         // Port field with label
         JPanel portPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         portPanel.setOpaque(false);
@@ -450,6 +459,9 @@ public class AdvancedClient extends JFrame {
         portField.setToolTipText("Server port");
         portPanel.add(portLabelIcon);
         portPanel.add(portField);
+
+        centerPanel.add(portPanel, gbc);
+        gbc.gridx++;
 
         // Username field with label
         JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
@@ -463,24 +475,27 @@ public class AdvancedClient extends JFrame {
         userPanel.add(userIcon);
         userPanel.add(usernameField);
 
+        centerPanel.add(userPanel, gbc);
+        gbc.gridx++;
+
         // Buttons
+        gbc.insets = new Insets(0, 8, 0, 4); // Extra space before buttons
         discoverButton = new ModernUI.ModernButton("🔍 Scan", new Color(10, 132, 255));
         discoverButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 11));
         discoverButton.setPreferredSize(new Dimension(80, 34));
         discoverButton.setToolTipText("Scan local network for servers");
         discoverButton.addActionListener(e -> showServerDiscovery());
 
+        centerPanel.add(discoverButton, gbc);
+        gbc.gridx++;
+
+        gbc.insets = new Insets(0, 4, 0, 4);
         connectButton = new ModernUI.ModernButton("🔗 Connect", SUCCESS_COLOR);
         connectButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 11));
         connectButton.setPreferredSize(new Dimension(95, 34));
         connectButton.addActionListener(e -> toggleConnection());
 
-        centerPanel.add(serverPanel);
-        centerPanel.add(portPanel);
-        centerPanel.add(userPanel);
-        centerPanel.add(Box.createHorizontalStrut(6));
-        centerPanel.add(discoverButton);
-        centerPanel.add(connectButton);
+        centerPanel.add(connectButton, gbc);
 
         // Right side - Status indicators
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
@@ -565,9 +580,10 @@ public class AdvancedClient extends JFrame {
         userListPanel.setBorder(BorderFactory.createLineBorder(new Color(45, 45, 50), 1));
 
         // User list header
-        JPanel userHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        JPanel userHeader = new JPanel(new GridBagLayout());
         userHeader.setBackground(new Color(38, 38, 42));
         userHeader.setBorder(new MatteBorder(0, 0, 1, 0, new Color(50, 50, 55)));
+        userHeader.setPreferredSize(new Dimension(0, 40));
 
         JLabel userHeaderLabel = new JLabel("👥 Online");
         userHeaderLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
@@ -631,8 +647,13 @@ public class AdvancedClient extends JFrame {
         messageField.setBorder(new EmptyBorder(4, 8, 4, 8));
 
         // Buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel buttonPanel = new JPanel(new GridBagLayout());
         buttonPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(0, 3, 0, 3);
+        gbc.anchor = GridBagConstraints.CENTER;
 
         // Emoji button
         emojiButton = new ModernUI.ModernButton("😊", new Color(70, 70, 80));
@@ -655,9 +676,11 @@ public class AdvancedClient extends JFrame {
         sendButton.setEnabled(false);
         sendButton.addActionListener(e -> sendMessageWithAnimation());
 
-        buttonPanel.add(clearChatButton);
-        buttonPanel.add(emojiButton);
-        buttonPanel.add(sendButton);
+        buttonPanel.add(clearChatButton, gbc);
+        gbc.gridx++;
+        buttonPanel.add(emojiButton, gbc);
+        gbc.gridx++;
+        buttonPanel.add(sendButton, gbc);
 
         inputContainer.add(messageField, BorderLayout.CENTER);
         inputContainer.add(buttonPanel, BorderLayout.EAST);
