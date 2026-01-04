@@ -352,141 +352,214 @@ public class AdvancedClient extends JFrame {
     }
 
     private void createModernConnectionPanel() {
-        connectionPanel = new ModernUI.ModernPanel(SURFACE_COLOR);
+        // Create gradient header panel
+        connectionPanel = new ModernUI.ModernPanel(SURFACE_COLOR) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+                GradientPaint gradient = new GradientPaint(
+                        0, 0, new Color(32, 32, 38),
+                        0, getHeight(), new Color(24, 24, 28)
+                );
+                g2.setPaint(gradient);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
         connectionPanel.setLayout(new BorderLayout(10, 0));
-        connectionPanel.setBorder(new EmptyBorder(18, 28, 18, 28));
+        connectionPanel.setBorder(new CompoundBorder(
+                new MatteBorder(0, 0, 2, 0, PRIMARY_COLOR),
+                new EmptyBorder(14, 24, 14, 24)
+        ));
 
-        // Initialize connection fields with ModernUI.ModernTextField
+        // Left side - Logo and title
+        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        brandPanel.setOpaque(false);
+
+        JLabel logoLabel = new JLabel("💬");
+        logoLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 26));
+
+        JPanel titlePanel = new JPanel();
+        titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
+        titlePanel.setOpaque(false);
+
+        JLabel titleLabel = new JLabel("Elite Chat");
+        titleLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 16));
+        titleLabel.setForeground(TEXT_COLOR);
+
+        JLabel subtitleLabel = new JLabel("Modern Messenger");
+        subtitleLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 10));
+        subtitleLabel.setForeground(TEXT_SECONDARY);
+
+        titlePanel.add(titleLabel);
+        titlePanel.add(subtitleLabel);
+
+        brandPanel.add(logoLabel);
+        brandPanel.add(titlePanel);
+
+        // Center - Connection fields in a compact row
+        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
+        centerPanel.setOpaque(false);
+
+        // Server field with label
+        JPanel serverPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        serverPanel.setOpaque(false);
+        JLabel serverLabel = new JLabel("🖥️");
+        serverLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
         serverField = new ModernUI.ModernTextField("localhost");
-        serverField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
-        serverField.setPreferredSize(new Dimension(140, 42));
-        serverField.setToolTipText("Enter server IP (e.g., 192.168.1.x for local network)");
+        serverField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        serverField.setPreferredSize(new Dimension(110, 34));
+        serverField.setToolTipText("Server IP address");
+        serverPanel.add(serverLabel);
+        serverPanel.add(serverField);
 
+        // Port field with label
+        JPanel portPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        portPanel.setOpaque(false);
+        JLabel portLabelIcon = new JLabel("🔌");
+        portLabelIcon.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
         portField = new ModernUI.ModernTextField("12345");
-        portField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
-        portField.setPreferredSize(new Dimension(100, 42));
-        portField.setToolTipText("Server port (default: 12345)");
+        portField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        portField.setPreferredSize(new Dimension(70, 34));
+        portField.setToolTipText("Server port");
+        portPanel.add(portLabelIcon);
+        portPanel.add(portField);
 
+        // Username field with label
+        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        userPanel.setOpaque(false);
+        JLabel userIcon = new JLabel("👤");
+        userIcon.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
         usernameField = new ModernUI.ModernTextField("Your name");
-        usernameField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
-        usernameField.setPreferredSize(new Dimension(140, 42));
-        usernameField.setToolTipText("Your display name (leave empty for 'Anonymous')");
+        usernameField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
+        usernameField.setPreferredSize(new Dimension(100, 34));
+        usernameField.setToolTipText("Your display name");
+        userPanel.add(userIcon);
+        userPanel.add(usernameField);
 
-        // Left side - Connection controls with improved alignment
-        JPanel leftPanel = new JPanel(new GridBagLayout());
-        leftPanel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 12, 0, 12);
-        gbc.anchor = GridBagConstraints.WEST;
-
-        // Server field
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        JLabel serverLabel = createGlowLabel("🖥️ Server:", TEXT_COLOR);
-        serverLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
-        leftPanel.add(serverLabel, gbc);
-        gbc.gridx = 1;
-        leftPanel.add(serverField, gbc);
-
-        // Port field
-        gbc.gridx = 2;
-        gbc.gridy = 0;
-        JLabel portLabelConn = createGlowLabel("🔌 Port:", TEXT_COLOR);
-        portLabelConn.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
-        leftPanel.add(portLabelConn, gbc);
-        gbc.gridx = 3;
-        leftPanel.add(portField, gbc);
-
-        // Username field
-        gbc.gridx = 4;
-        gbc.gridy = 0;
-        JLabel usernameLabel = createGlowLabel("👤 Username:", TEXT_COLOR);
-        usernameLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
-        leftPanel.add(usernameLabel, gbc);
-        gbc.gridx = 5;
-        leftPanel.add(usernameField, gbc);
-
-        // Discover button
-        gbc.gridx = 6;
-        gbc.gridy = 0;
-        discoverButton = new ModernUI.ModernButton("🔍 Discover", new Color(10, 132, 255));
-        discoverButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
+        // Buttons
+        discoverButton = new ModernUI.ModernButton("🔍 Scan", new Color(10, 132, 255));
+        discoverButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 11));
+        discoverButton.setPreferredSize(new Dimension(80, 34));
         discoverButton.setToolTipText("Scan local network for servers");
         discoverButton.addActionListener(e -> showServerDiscovery());
-        leftPanel.add(discoverButton, gbc);
 
-        // Connect button
-        gbc.gridx = 7;
-        gbc.gridy = 0;
         connectButton = new ModernUI.ModernButton("🔗 Connect", SUCCESS_COLOR);
-        connectButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
+        connectButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 11));
+        connectButton.setPreferredSize(new Dimension(95, 34));
         connectButton.addActionListener(e -> toggleConnection());
-        leftPanel.add(connectButton, gbc);
 
-        // Right side - Status with improved alignment
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 8));
+        centerPanel.add(serverPanel);
+        centerPanel.add(portPanel);
+        centerPanel.add(userPanel);
+        centerPanel.add(Box.createHorizontalStrut(6));
+        centerPanel.add(discoverButton);
+        centerPanel.add(connectButton);
+
+        // Right side - Status indicators
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         rightPanel.setOpaque(false);
 
-        statusLabel = new JLabel("⚫ Offline");
-        statusLabel.setForeground(TEXT_COLOR);
-        statusLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 16));
-
-        userCountLabel = new JLabel("👥 0 online");
+        userCountLabel = new JLabel("👥 0");
         userCountLabel.setForeground(TEXT_SECONDARY);
-        userCountLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
+        userCountLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+        userCountLabel.setToolTipText("Users online");
+
+        // Status with colored indicator
+        statusLabel = new JLabel("⚫ Offline");
+        statusLabel.setForeground(TEXT_SECONDARY);
+        statusLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
 
         rightPanel.add(userCountLabel);
+        rightPanel.add(Box.createHorizontalStrut(8));
         rightPanel.add(statusLabel);
 
-        connectionPanel.add(leftPanel, BorderLayout.WEST);
+        connectionPanel.add(brandPanel, BorderLayout.WEST);
+        connectionPanel.add(centerPanel, BorderLayout.CENTER);
         connectionPanel.add(rightPanel, BorderLayout.EAST);
     }
 
     private void createModernChatPanel() {
         chatPanel = new ModernUI.ModernPanel(BACKGROUND_COLOR);
-        chatPanel.setLayout(new BorderLayout(15, 12));
-        chatPanel.setBorder(new EmptyBorder(18, 28, 18, 28));
+        chatPanel.setLayout(new BorderLayout(12, 0));
+        chatPanel.setBorder(new EmptyBorder(12, 20, 12, 20));
 
-        // Discord-style chat area with message bubbles
+        // Chat area with improved styling
         chatArea = new JPanel();
         chatArea.setLayout(new BoxLayout(chatArea, BoxLayout.Y_AXIS));
-        chatArea.setBackground(CARD_COLOR);
-        chatArea.setBorder(new EmptyBorder(4, 4, 4, 4));
+        chatArea.setBackground(new Color(26, 26, 30));
+        chatArea.setBorder(new EmptyBorder(12, 8, 12, 8));
 
-        // Modern scroll pane with custom styling
+        // Modern scroll pane
         chatScroll = new JScrollPane(chatArea);
-        chatScroll.setBorder(new CompoundBorder(
-                new ModernUI.ModernTitledBorder("💬 Messages"),
-                new EmptyBorder(10, 10, 10, 10)));
-        chatScroll.setBackground(CARD_COLOR);
-        chatScroll.getViewport().setBackground(CARD_COLOR);
+        chatScroll.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(45, 45, 50), 1),
+                new EmptyBorder(0, 0, 0, 0)
+        ));
+        chatScroll.setBackground(new Color(26, 26, 30));
+        chatScroll.getViewport().setBackground(new Color(26, 26, 30));
         chatScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         chatScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-
-        // Style scrollbar
         styleScrollBar(chatScroll);
 
-        // Modern user list with improved readability
+        // User list with better styling
         userListModel = new DefaultListModel<>();
         userList = new JList<>(userListModel);
-        userList.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
-        userList.setFixedCellHeight(32);
-        userList.setBackground(CARD_COLOR);
+        userList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                String username = value.toString();
+                String avatar = getProfileAvatar(username);
+                label.setText(avatar + "  " + username);
+                label.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+                label.setBorder(new EmptyBorder(8, 12, 8, 12));
+
+                if (isSelected) {
+                    label.setBackground(new Color(88, 101, 242, 60));
+                } else {
+                    label.setBackground(new Color(32, 32, 36));
+                }
+                label.setForeground(TEXT_COLOR);
+                label.setOpaque(true);
+                return label;
+            }
+        });
+        userList.setBackground(new Color(32, 32, 36));
         userList.setForeground(TEXT_COLOR);
-        userList.setSelectionBackground(ModernUI.ThemeColors.TABLE_SELECTION);
+        userList.setSelectionBackground(new Color(88, 101, 242, 80));
         userList.setSelectionForeground(TEXT_COLOR);
-        userList.setBorder(new EmptyBorder(20, 20, 20, 20));
+        userList.setFixedCellHeight(40);
+
+        // User list panel with header
+        JPanel userListPanel = new JPanel(new BorderLayout());
+        userListPanel.setBackground(new Color(32, 32, 36));
+        userListPanel.setPreferredSize(new Dimension(200, 0));
+        userListPanel.setBorder(BorderFactory.createLineBorder(new Color(45, 45, 50), 1));
+
+        // User list header
+        JPanel userHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        userHeader.setBackground(new Color(38, 38, 42));
+        userHeader.setBorder(new MatteBorder(0, 0, 1, 0, new Color(50, 50, 55)));
+
+        JLabel userHeaderLabel = new JLabel("👥 Online");
+        userHeaderLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
+        userHeaderLabel.setForeground(TEXT_SECONDARY);
+        userHeader.add(userHeaderLabel);
 
         userScroll = new JScrollPane(userList);
-        userScroll.setBorder(new CompoundBorder(
-                new ModernUI.ModernTitledBorder("👥 Online (0)"),
-                new EmptyBorder(10, 10, 10, 10)));
-        userScroll.setPreferredSize(new Dimension(240, 0));
-        userScroll.setBackground(CARD_COLOR);
-        userScroll.getViewport().setBackground(CARD_COLOR);
+        userScroll.setBorder(null);
+        userScroll.setBackground(new Color(32, 32, 36));
+        userScroll.getViewport().setBackground(new Color(32, 32, 36));
         styleScrollBar(userScroll);
 
-        // Add double-click interaction
+        userListPanel.add(userHeader, BorderLayout.NORTH);
+        userListPanel.add(userScroll, BorderLayout.CENTER);
+
+        // Double-click to PM
         userList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -494,78 +567,86 @@ public class AdvancedClient extends JFrame {
                     String user = userList.getSelectedValue();
                     messageField.setText("@" + user + " ");
                     messageField.requestFocusInWindow();
-                    // Add selection animation
                     animateSelection();
                 }
             }
         });
 
         chatPanel.add(chatScroll, BorderLayout.CENTER);
-        chatPanel.add(userScroll, BorderLayout.EAST);
+        chatPanel.add(userListPanel, BorderLayout.EAST);
     }
 
     private void createModernInputPanel() {
         inputPanel = new ModernUI.ModernPanel(BACKGROUND_COLOR);
-        inputPanel.setLayout(new BorderLayout(15, 12));
-        inputPanel.setBorder(new EmptyBorder(12, 28, 18, 28));
+        inputPanel.setLayout(new BorderLayout(10, 8));
+        inputPanel.setBorder(new EmptyBorder(8, 20, 16, 20));
 
-        // Message input container with glassmorphism effect
-        JPanel inputContainer = new JPanel(new BorderLayout(10, 0));
+        // Main input container with rounded background
+        JPanel inputContainer = new JPanel(new BorderLayout(8, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(38, 38, 44));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+            }
+        };
         inputContainer.setOpaque(false);
+        inputContainer.setBorder(new EmptyBorder(8, 12, 8, 8));
 
-        // Create modern message field
-        messageField = new ModernUI.ModernTextField("Type your message...");
+        // Message field
+        messageField = new ModernUI.ModernTextField("Type a message...");
         messageField.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
         messageField.setEnabled(false);
+        messageField.setBorder(new EmptyBorder(4, 8, 4, 8));
 
-        // Modern send button with glow effect
-        sendButton = new ModernUI.ModernButton("📤 Send", PRIMARY_COLOR);
-        sendButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
-        sendButton.setEnabled(false);
-        sendButton.addActionListener(e -> sendMessageWithAnimation());
+        // Buttons panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        buttonPanel.setOpaque(false);
 
         // Emoji button
-        emojiButton = new ModernUI.ModernButton("😊", ACCENT_COLOR);
-        emojiButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 16));
-        emojiButton.setPreferredSize(new Dimension(50, 38));
+        emojiButton = new ModernUI.ModernButton("😊", new Color(70, 70, 80));
+        emojiButton.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 18));
+        emojiButton.setPreferredSize(new Dimension(42, 36));
         emojiButton.setEnabled(false);
         emojiButton.addActionListener(e -> showEmojiPanel());
 
-        // Clear chat button
-        clearChatButton = new ModernUI.ModernButton("🗑️", new Color(100, 100, 100));
-        clearChatButton.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 14));
-        clearChatButton.setPreferredSize(new Dimension(50, 38));
-        clearChatButton.setToolTipText("Clear chat (Ctrl+L)");
+        // Clear button
+        clearChatButton = new ModernUI.ModernButton("🗑", new Color(70, 70, 80));
+        clearChatButton.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
+        clearChatButton.setPreferredSize(new Dimension(42, 36));
+        clearChatButton.setToolTipText("Clear chat");
         clearChatButton.addActionListener(e -> clearChatWithAnimation());
 
-        // Enter key to send message
-        messageField.addActionListener(e -> sendMessageWithAnimation());
+        // Send button
+        sendButton = new ModernUI.ModernButton("➤", PRIMARY_COLOR);
+        sendButton.setFont(new Font("SansSerif", Font.BOLD, 16));
+        sendButton.setPreferredSize(new Dimension(50, 36));
+        sendButton.setEnabled(false);
+        sendButton.addActionListener(e -> sendMessageWithAnimation());
 
-        // Advanced typing indicator with animation
-        setupAdvancedTypingIndicator();
-
-        // Create input layout with better alignment
-        ModernUI.ModernCard messagePanel = new ModernUI.ModernCard(CARD_COLOR, false);
-        messagePanel.setLayout(new BorderLayout());
-        messagePanel.setBorder(new EmptyBorder(6, 10, 6, 10));
-        messagePanel.add(messageField, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        buttonPanel.setOpaque(false);
         buttonPanel.add(clearChatButton);
         buttonPanel.add(emojiButton);
         buttonPanel.add(sendButton);
 
-        inputContainer.add(messagePanel, BorderLayout.CENTER);
+        inputContainer.add(messageField, BorderLayout.CENTER);
         inputContainer.add(buttonPanel, BorderLayout.EAST);
 
-        inputPanel.add(inputContainer, BorderLayout.CENTER);
+        // Enter to send
+        messageField.addActionListener(e -> sendMessageWithAnimation());
 
-        // Typing indicator with improved readability
+        // Typing indicator
+        setupAdvancedTypingIndicator();
+
+        // Typing label at bottom
         typingLabel = new JLabel(" ");
-        typingLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 12));
+        typingLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 11));
         typingLabel.setForeground(TEXT_SECONDARY);
-        typingLabel.setBorder(new EmptyBorder(6, 4, 0, 4));
+        typingLabel.setBorder(new EmptyBorder(4, 4, 0, 4));
+
+        inputPanel.add(inputContainer, BorderLayout.CENTER);
         inputPanel.add(typingLabel, BorderLayout.SOUTH);
     }
 
@@ -1232,9 +1313,9 @@ public class AdvancedClient extends JFrame {
             output.println("USERNAME|" + username);
 
             SwingUtilities.invokeLater(() -> {
-                statusLabel.setText("🟢 Connected as " + username);
-                // statusLabel.stopPulse();
-                setTitle("💬 Elite Chat Client - " + username);
+                statusLabel.setText("🟢 Connected");
+                statusLabel.setForeground(SUCCESS_COLOR);
+                setTitle("💬 Elite Chat - " + username);
                 appendDiscordMessage("System", "✨ Welcome! Connected as " + username, getCurrentTime(), "system");
                 updateConnectionStatus();
 
@@ -1470,15 +1551,10 @@ public class AdvancedClient extends JFrame {
         }
 
         // Update user count
-        userCountLabel.setText("👥 " + userListModel.size() + " online");
+        userCountLabel.setText("👥 " + userListModel.size());
 
         // Update the user list title with count
-        if (userScroll != null && userScroll.getBorder() instanceof CompoundBorder cb) {
-            if (cb.getOutsideBorder() instanceof ModernUI.ModernTitledBorder border) {
-                border.setTitle("👥 Online (" + userListModel.size() + ")");
-                userScroll.repaint();
-            }
-        }
+        // (No longer using ModernTitledBorder)
     }
 
     private void appendDiscordMessage(String sender, String content, String timestamp, String messageType) {
