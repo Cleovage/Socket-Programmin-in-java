@@ -747,248 +747,264 @@ public class AdvancedClient extends JFrame {
         boolean isOwnMessage = messageType.equals("own");
         boolean isPrivateMessage = messageType.equals("private");
 
-        // Outer container for alignment
-        JPanel outerPanel = new JPanel(new BorderLayout());
-        outerPanel.setOpaque(false);
-        outerPanel.setBorder(new EmptyBorder(3, 10, 3, 10));
-        outerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
+        // Get sender-specific color
+        Color userColor = getUserColor(sender);
 
-        // Inner container that holds avatar and bubble
-        JPanel innerContainer = new JPanel(new BorderLayout(8, 0));
-        innerContainer.setOpaque(false);
-        innerContainer.setMaximumSize(new Dimension(550, 200));
-
-        // Determine colors and styling based on message type
+        // Own messages use blue, others use their assigned color
         Color bubbleColor;
-        Color textColor = TEXT_COLOR;
-        Color senderColor;
-        String avatarEmoji;
+        Color textColor = Color.WHITE;
 
         if (isOwnMessage) {
-            bubbleColor = new Color(88, 101, 242); // Primary blue for own messages
-            textColor = new Color(255, 255, 255);
-            senderColor = new Color(220, 220, 255);
-            avatarEmoji = "🔷";
+            bubbleColor = new Color(88, 101, 242); // Blue for own
         } else if (isPrivateMessage) {
-            bubbleColor = new Color(155, 89, 182); // Purple for private messages
-            textColor = new Color(255, 255, 255);
-            senderColor = new Color(220, 200, 255);
-            avatarEmoji = "✉️";
+            bubbleColor = new Color(155, 89, 182); // Purple for private
         } else {
-            bubbleColor = new Color(52, 53, 65); // Dark gray for others' messages
-            textColor = TEXT_COLOR;
-            int hash = sender.hashCode();
-            Color[] userColors = {
-                new Color(88, 101, 242),
-                new Color(67, 181, 129),
-                new Color(250, 166, 26),
-                new Color(237, 66, 69),
-                new Color(155, 89, 182),
-                new Color(26, 188, 156),
-                new Color(241, 196, 15)
-            };
-            senderColor = userColors[Math.abs(hash) % userColors.length];
-            avatarEmoji = getAvatarForUser(sender);
+            bubbleColor = userColor; // User's unique color
         }
 
-        // Avatar
-        JLabel avatarLabel = new JLabel(avatarEmoji);
-        avatarLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 24));
-        avatarLabel.setPreferredSize(new Dimension(36, 36));
-        avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        avatarLabel.setVerticalAlignment(SwingConstants.TOP);
+        // Main row panel
+        JPanel rowPanel = new JPanel();
+        rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.X_AXIS));
+        rowPanel.setOpaque(false);
+        rowPanel.setBorder(new EmptyBorder(4, 12, 4, 12));
+        rowPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Message bubble panel with rounded background
-        RoundedBubblePanel bubblePanel = new RoundedBubblePanel(bubbleColor, isOwnMessage);
-        bubblePanel.setLayout(new BorderLayout(0, 4));
-        bubblePanel.setBorder(new EmptyBorder(10, 14, 10, 14));
+        // Avatar panel with colored circle background
+        JPanel avatarPanel = createAvatarPanel(isOwnMessage ? username : sender, userColor, isOwnMessage);
 
-        // Header (sender name + timestamp)
-        JPanel headerPanel = new JPanel(new FlowLayout(isOwnMessage ? FlowLayout.RIGHT : FlowLayout.LEFT, 6, 0));
-        headerPanel.setOpaque(false);
+        // Message bubble
+        JPanel bubble = new JPanel();
+        bubble.setLayout(new BoxLayout(bubble, BoxLayout.Y_AXIS));
+        bubble.setBackground(bubbleColor);
+        bubble.setBorder(new EmptyBorder(8, 12, 8, 12));
 
-        JLabel senderLabel = new JLabel(sender);
-        senderLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 13));
-        senderLabel.setForeground(senderColor);
+        // Round the bubble corners
+        bubble.setUI(new javax.swing.plaf.PanelUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(bubbleColor);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 16, 16);
+                g2.dispose();
+            }
+        });
+        bubble.setOpaque(false);
 
-        JLabel timeLabel = new JLabel(timestamp);
+        // Header with name and time
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        header.setOpaque(false);
+
+        JLabel nameLabel = new JLabel(sender);
+        nameLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.BOLD, 12));
+        nameLabel.setForeground(new Color(255, 255, 255, 220));
+
+        JLabel timeLabel = new JLabel(" • " + timestamp);
         timeLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 10));
-        timeLabel.setForeground(new Color(textColor.getRed(), textColor.getGreen(), textColor.getBlue(), 180));
+        timeLabel.setForeground(new Color(255, 255, 255, 150));
 
+        header.add(nameLabel);
+        header.add(timeLabel);
+
+        // Message text
+        JLabel msgLabel = new JLabel("<html><body style='width: 280px'>" + escapeHtml(content) + "</body></html>");
+        msgLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+        msgLabel.setForeground(textColor);
+        msgLabel.setBorder(new EmptyBorder(2, 0, 0, 0));
+
+        bubble.add(header);
+        bubble.add(msgLabel);
+
+        // Assemble row based on alignment
         if (isOwnMessage) {
-            headerPanel.add(timeLabel);
-            headerPanel.add(senderLabel);
+            rowPanel.add(Box.createHorizontalGlue());
+            rowPanel.add(bubble);
+            rowPanel.add(Box.createRigidArea(new Dimension(8, 0)));
+            rowPanel.add(avatarPanel);
         } else {
-            headerPanel.add(senderLabel);
-            headerPanel.add(timeLabel);
+            rowPanel.add(avatarPanel);
+            rowPanel.add(Box.createRigidArea(new Dimension(8, 0)));
+            rowPanel.add(bubble);
+            rowPanel.add(Box.createHorizontalGlue());
         }
 
-        // Message content
-        JTextArea contentArea = new JTextArea(content);
-        contentArea.setEditable(false);
-        contentArea.setLineWrap(true);
-        contentArea.setWrapStyleWord(true);
-        contentArea.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
-        contentArea.setForeground(textColor);
-        contentArea.setOpaque(false);
-        contentArea.setBorder(null);
+        return rowPanel;
+    }
 
-        bubblePanel.add(headerPanel, BorderLayout.NORTH);
-        bubblePanel.add(contentArea, BorderLayout.CENTER);
+    // Create avatar panel with colored circle background
+    private JPanel createAvatarPanel(String user, Color color, boolean isOwnMessage) {
+        String avatar = getProfileAvatar(user);
 
-        // Assemble based on alignment
-        if (isOwnMessage) {
-            // Own messages on the right
-            innerContainer.add(bubblePanel, BorderLayout.CENTER);
-            innerContainer.add(avatarLabel, BorderLayout.EAST);
-            outerPanel.add(innerContainer, BorderLayout.EAST);
-        } else {
-            // Others' messages on the left
-            innerContainer.add(avatarLabel, BorderLayout.WEST);
-            innerContainer.add(bubblePanel, BorderLayout.CENTER);
-            outerPanel.add(innerContainer, BorderLayout.WEST);
-        }
+        JPanel avatarPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Draw colored circle background
+                Color bgColor = isOwnMessage ? new Color(88, 101, 242) : color;
+                g2.setColor(new Color(bgColor.getRed(), bgColor.getGreen(), bgColor.getBlue(), 60));
+                g2.fillOval(0, 0, 36, 36);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        avatarPanel.setOpaque(false);
+        avatarPanel.setPreferredSize(new Dimension(36, 36));
+        avatarPanel.setMinimumSize(new Dimension(36, 36));
+        avatarPanel.setMaximumSize(new Dimension(36, 36));
+        avatarPanel.setLayout(new GridBagLayout());
 
-        return outerPanel;
+        JLabel avatarLabel = new JLabel(avatar);
+        avatarLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 20));
+        avatarPanel.add(avatarLabel);
+
+        return avatarPanel;
+    }
+
+    // Get consistent color for user
+    private Color getUserColor(String username) {
+        Color[] userColors = {
+            new Color(88, 101, 242), // Blue
+            new Color(67, 181, 129), // Green
+            new Color(250, 166, 26), // Orange
+            new Color(237, 66, 69), // Red
+            new Color(155, 89, 182), // Purple
+            new Color(26, 188, 156), // Teal
+            new Color(241, 196, 15), // Yellow
+            new Color(231, 76, 60), // Coral
+            new Color(52, 152, 219), // Sky Blue
+            new Color(46, 204, 113) // Emerald
+        };
+        return userColors[Math.abs(username.hashCode()) % userColors.length];
+    }
+
+    // Escape HTML special characters
+    private String escapeHtml(String text) {
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\n", "<br>");
     }
 
     // Create centered system message with distinct styling
     private JPanel createSystemMessage(String content, String timestamp) {
-        JPanel messagePanel = new JPanel();
-        messagePanel.setLayout(new BoxLayout(messagePanel, BoxLayout.Y_AXIS));
-        messagePanel.setOpaque(false);
-        messagePanel.setBorder(new EmptyBorder(1, 10, 1, 10));
-        messagePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        JPanel rowPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        rowPanel.setOpaque(false);
+        rowPanel.setBorder(new EmptyBorder(6, 12, 6, 12));
 
-        // Create a centered container
-        JPanel centerContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-        centerContainer.setOpaque(true);
-        centerContainer.setBackground(new Color(SURFACE_COLOR.getRed() + 5, SURFACE_COLOR.getGreen() + 5, SURFACE_COLOR.getBlue() + 5));
-        centerContainer.setBorder(new EmptyBorder(3, 8, 3, 8));
+        JPanel pill = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 4));
+        pill.setBackground(new Color(50, 50, 55));
+        pill.setBorder(new EmptyBorder(2, 12, 2, 12));
 
-        // System icon
-        JLabel iconLabel = new JLabel("ℹ️");
-        iconLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 12));
-        centerContainer.add(iconLabel);
+        // Round corners
+        pill.setUI(new javax.swing.plaf.PanelUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(50, 50, 55));
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 14, 14);
+                g2.dispose();
+            }
+        });
+        pill.setOpaque(false);
 
-        // Message text with italic styling
-        JLabel messageLabel = new JLabel(content);
-        messageLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 12));
-        messageLabel.setForeground(new Color(TEXT_SECONDARY.getRed() + 20, TEXT_SECONDARY.getGreen() + 20, TEXT_SECONDARY.getBlue() + 20));
-        centerContainer.add(messageLabel);
+        JLabel icon = new JLabel("ℹ️");
+        icon.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 11));
 
-        // Timestamp
-        JLabel timestampLabel = new JLabel(timestamp);
-        timestampLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 10));
-        timestampLabel.setForeground(new Color(TEXT_SECONDARY.getRed(), TEXT_SECONDARY.getGreen(), TEXT_SECONDARY.getBlue(), 150));
-        centerContainer.add(timestampLabel);
+        JLabel msg = new JLabel(content);
+        msg.setFont(ModernUI.getEmojiCompatibleFont(Font.ITALIC, 11));
+        msg.setForeground(TEXT_SECONDARY);
 
-        centerContainer.setAlignmentX(Component.CENTER_ALIGNMENT);
-        messagePanel.add(centerContainer);
+        JLabel time = new JLabel(timestamp);
+        time.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 9));
+        time.setForeground(new Color(TEXT_SECONDARY.getRed(), TEXT_SECONDARY.getGreen(), TEXT_SECONDARY.getBlue(), 150));
 
-        return messagePanel;
+        pill.add(icon);
+        pill.add(msg);
+        pill.add(time);
+        rowPanel.add(pill);
+
+        return rowPanel;
     }
 
     // Create compact message (when same user sends multiple messages)
-    private JPanel createCompactMessage(String content, String messageType) {
+    private JPanel createCompactMessage(String content, String messageType, String sender) {
         boolean isOwnMessage = messageType.equals("own");
         boolean isPrivateMessage = messageType.equals("private");
 
-        // Outer container for alignment
-        JPanel outerPanel = new JPanel(new BorderLayout());
-        outerPanel.setOpaque(false);
-        outerPanel.setBorder(new EmptyBorder(2, 10, 2, 10));
-        outerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
-
-        // Determine colors based on message type
+        Color userColor = getUserColor(sender);
         Color bubbleColor;
-        Color textColor;
 
         if (isOwnMessage) {
             bubbleColor = new Color(88, 101, 242);
-            textColor = new Color(255, 255, 255);
         } else if (isPrivateMessage) {
             bubbleColor = new Color(155, 89, 182);
-            textColor = new Color(255, 255, 255);
         } else {
-            bubbleColor = new Color(52, 53, 65);
-            textColor = TEXT_COLOR;
+            bubbleColor = userColor;
         }
 
-        // Message bubble
-        RoundedBubblePanel bubblePanel = new RoundedBubblePanel(bubbleColor, isOwnMessage);
-        bubblePanel.setLayout(new BorderLayout());
-        bubblePanel.setBorder(new EmptyBorder(8, 14, 8, 14));
-        bubblePanel.setMaximumSize(new Dimension(550, 150));
+        // Row panel
+        JPanel rowPanel = new JPanel();
+        rowPanel.setLayout(new BoxLayout(rowPanel, BoxLayout.X_AXIS));
+        rowPanel.setOpaque(false);
+        rowPanel.setBorder(new EmptyBorder(1, 12, 1, 12));
 
-        // Message content
-        JTextArea contentArea = new JTextArea(content);
-        contentArea.setEditable(false);
-        contentArea.setLineWrap(true);
-        contentArea.setWrapStyleWord(true);
-        contentArea.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 14));
-        contentArea.setForeground(textColor);
-        contentArea.setOpaque(false);
-        contentArea.setBorder(null);
-
-        bubblePanel.add(contentArea, BorderLayout.CENTER);
-
-        // Add spacing for avatar alignment (44px = 36px avatar + 8px gap)
+        // Spacer for avatar alignment
         JPanel spacer = new JPanel();
         spacer.setOpaque(false);
         spacer.setPreferredSize(new Dimension(44, 1));
+        spacer.setMinimumSize(new Dimension(44, 1));
+        spacer.setMaximumSize(new Dimension(44, 1));
 
-        JPanel innerContainer = new JPanel(new BorderLayout());
-        innerContainer.setOpaque(false);
-        innerContainer.setMaximumSize(new Dimension(550, 150));
+        // Compact bubble
+        JPanel bubble = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        bubble.setBackground(bubbleColor);
+        bubble.setBorder(new EmptyBorder(6, 12, 6, 12));
+
+        bubble.setUI(new javax.swing.plaf.PanelUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(bubbleColor);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 14, 14);
+                g2.dispose();
+            }
+        });
+        bubble.setOpaque(false);
+
+        JLabel msgLabel = new JLabel("<html><body style='width: 280px'>" + escapeHtml(content) + "</body></html>");
+        msgLabel.setFont(ModernUI.getEmojiCompatibleFont(Font.PLAIN, 13));
+        msgLabel.setForeground(Color.WHITE);
+        bubble.add(msgLabel);
 
         if (isOwnMessage) {
-            innerContainer.add(bubblePanel, BorderLayout.CENTER);
-            innerContainer.add(spacer, BorderLayout.EAST);
-            outerPanel.add(innerContainer, BorderLayout.EAST);
+            rowPanel.add(Box.createHorizontalGlue());
+            rowPanel.add(bubble);
+            rowPanel.add(Box.createRigidArea(new Dimension(8, 0)));
+            rowPanel.add(spacer);
         } else {
-            innerContainer.add(spacer, BorderLayout.WEST);
-            innerContainer.add(bubblePanel, BorderLayout.CENTER);
-            outerPanel.add(innerContainer, BorderLayout.WEST);
+            rowPanel.add(spacer);
+            rowPanel.add(Box.createRigidArea(new Dimension(8, 0)));
+            rowPanel.add(bubble);
+            rowPanel.add(Box.createHorizontalGlue());
         }
 
-        return outerPanel;
+        return rowPanel;
     }
 
-    // Rounded bubble panel for message containers
-    private static class RoundedBubblePanel extends JPanel {
-
-        private Color backgroundColor;
-        private boolean isRightAligned;
-        private int cornerRadius = 16;
-
-        public RoundedBubblePanel(Color bgColor, boolean rightAligned) {
-            this.backgroundColor = bgColor;
-            this.isRightAligned = rightAligned;
-            setOpaque(false);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // Draw shadow for depth
-            g2.setColor(new Color(0, 0, 0, 30));
-            g2.fillRoundRect(2, 3, getWidth() - 4, getHeight() - 4, cornerRadius, cornerRadius);
-
-            // Draw bubble background
-            g2.setColor(backgroundColor);
-            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, cornerRadius, cornerRadius);
-
-            g2.dispose();
-            super.paintComponent(g);
-        }
-    }
-
-    // Get consistent avatar emoji for each user
-    private String getAvatarForUser(String username) {
-        String[] avatars = {"👤", "😀", "😎", "🤖", "👻", "🦊", "🐱", "🐶", "🐼", "🦁", "🐯", "🐸"};
+    // Get consistent profile avatar for each user
+    private String getProfileAvatar(String username) {
+        String[] avatars = {
+            "👨", "👩", "🧑", "👦", "👧", "🧔", "👴", "👵",
+            "👨‍💼", "👩‍💼", "👨‍🔬", "👩‍🔬", "👨‍💻", "👩‍💻", "👨‍🎨", "👩‍🎨",
+            "🧑‍🚀", "👨‍🚀", "👩‍🚀", "🦸", "🦸‍♀️", "🧙", "🧙‍♀️", "🧚",
+            "🧛", "🧜", "🧝", "👼", "🎅", "🤶", "🥷", "🧞",
+            "😀", "😎", "🤓", "🥳", "😇", "🤩", "🤖", "👽",
+            "👻", "💀", "🎃", "🤡", "🐱", "🐶", "🐼", "🦊",
+            "🦁", "🐯", "🐸", "🐵", "🦄", "🐲", "🦋", "🐬"
+        };
         int index = Math.abs(username.hashCode()) % avatars.length;
         return avatars[index];
     }
@@ -1472,7 +1488,7 @@ public class AdvancedClient extends JFrame {
 
             JPanel messageComponent;
             if (groupWithPrevious) {
-                messageComponent = createCompactMessage(content, messageType);
+                messageComponent = createCompactMessage(content, messageType, sender);
             } else {
                 messageComponent = createMessageBubble(sender, content, timestamp, messageType);
                 lastMessageSender = sender;
