@@ -107,10 +107,34 @@ public class AdvancedClient extends JFrame {
         createModernChatPanel();
         createModernInputPanel();
 
+        // Use JLayeredPane for proper overlay stacking
+        JLayeredPane layeredPane = new JLayeredPane();
+        layeredPane.setLayout(null); // Use absolute positioning
+
+        // Add resize listener to position components correctly
+        layeredPane.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                int width = layeredPane.getWidth();
+                int height = layeredPane.getHeight();
+
+                // Chat panel fills entire space
+                chatPanel.setBounds(0, 0, width, height);
+
+                // Input panel floats at bottom with margins
+                int inputHeight = 100;
+                int margin = 20;
+                inputPanel.setBounds(margin, height - inputHeight - margin,
+                        width - (margin * 2), inputHeight);
+            }
+        });
+
+        layeredPane.add(chatPanel, JLayeredPane.DEFAULT_LAYER);
+        layeredPane.add(inputPanel, JLayeredPane.PALETTE_LAYER);
+
         // Add components with spacing
         add(connectionPanel, BorderLayout.NORTH);
-        add(chatPanel, BorderLayout.CENTER);
-        add(inputPanel, BorderLayout.SOUTH);
+        add(layeredPane, BorderLayout.CENTER);
 
         // Setup keyboard shortcuts and effects
         setupKeyboardShortcuts();
@@ -484,7 +508,7 @@ public class AdvancedClient extends JFrame {
     private void createModernChatPanel() {
         chatPanel = new ModernUI.ModernPanel(BACKGROUND_COLOR);
         chatPanel.setLayout(new BorderLayout(12, 0));
-        chatPanel.setBorder(new EmptyBorder(12, 20, 12, 20));
+        chatPanel.setBorder(new EmptyBorder(12, 20, 120, 20)); // Extra bottom padding for floating input
 
         // Chat area with improved styling
         chatArea = new JPanel();
@@ -579,7 +603,8 @@ public class AdvancedClient extends JFrame {
     private void createModernInputPanel() {
         inputPanel = new ModernUI.ModernPanel(BACKGROUND_COLOR);
         inputPanel.setLayout(new BorderLayout(10, 8));
-        inputPanel.setBorder(new EmptyBorder(8, 20, 16, 20));
+        inputPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
+        inputPanel.setOpaque(false);
 
         // Main input container with rounded background
         JPanel inputContainer = new JPanel(new BorderLayout(8, 0)) {
@@ -588,8 +613,11 @@ public class AdvancedClient extends JFrame {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(38, 38, 44));
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.setColor(new Color(38, 38, 44, 230));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+                g2.setColor(new Color(0, 0, 0, 55));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 14, 14);
                 g2.dispose();
             }
         };
